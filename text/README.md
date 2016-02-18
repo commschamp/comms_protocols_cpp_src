@@ -31,7 +31,6 @@ applicable to non-embedded systems which don't have limitations of the latter.
 
 Plan:
 * [Introduction]
-    * [Motivation]
     * [Goal]    
     * [Final Outcome]
     * [Audience]

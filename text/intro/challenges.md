@@ -82,13 +82,14 @@ develop some additional protocol testing tools because the other team is
 not ready yet.
 
 ## Intra-System Reuse
-It is not uncommon for various embedded systems to add extra I/O interface
+It is not uncommon for various embedded systems to add extra I/O interfaces
 in the next generations of the device hardware which can be used to communicate with
 other devices using the same protocol. For example, the first generation of
 some embedded sensor communicates its data over TCP/IP network link to 
 some data management server. The second generation adds a Bluetooth interface
-that allows to communicate the same data to a tablet of a person working nearby.
-The application level messages used are the same for the server and the tablet.
+that allows to communicate the same data to a tablet of the person working nearby.
+The application level messages, used to communicate the data, 
+are the same for the server and the tablet.
 However, the transport wrapping information for TCP/IP and Bluetooth will 
 obviously differ. If initial implementation of the communication protocol 
 hasn't properly separated the application level messages and wrapping transport
