@@ -30,10 +30,6 @@ dynamic memory allocation when possible. All the presented techniques are also
 applicable to non-embedded systems which don't have limitations of the latter.
 
 Plan:
-* [Introduction]
-    * [Goal]    
-    * [Final Outcome]
-    * [Audience]
 * [Messages]
     * [Handling]
     * [Reading and Writing]
