@@ -8,3 +8,4 @@ In order to achieve all our [goals](#goal.md) of platform and runtime environmen
 independence, there is little other choice but to use templates with significant
 amount of meta-programming techniques in order to allow compiler to generate
 the best code suitable for the system being developed.
+
