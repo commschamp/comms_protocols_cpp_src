@@ -6,3 +6,4 @@
     * [Final Outcome](intro/outcome.md)
     * [Audience](intro/audience.md)
     * [Code Examples](intro/code.md)
+* [Message](message/head.md)
