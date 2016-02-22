@@ -2,7 +2,7 @@
 
 Using the ideas expressed in this book I developed the
 headers only platform independent 
-[library](https://github.com/arobenko/comms_champion/tree/develop#comms-library)
+[library](https://github.com/arobenko/comms_champion#comms-library)
 which makes the implementation of binary communication protocols to be 
 a quick and easy process.  It provides all the necessary types and classes to 
 make the definition of the custom messages as well as wrapping transport data 
