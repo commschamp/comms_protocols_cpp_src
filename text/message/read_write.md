@@ -186,11 +186,9 @@ class Message
 public:
     typedef TReadIter ReadIterator;
     typedef TWriteIter WriteIterator;
-    
     ...
     
 protected:
-
     template <typename T>
     static T readData(ReadIterator& iter) {...}
     
@@ -216,12 +214,10 @@ class Message
 public:
     typedef TReadIter ReadIterator;
     typedef TWriteIter WriteIterator;
-    
     ...
     
 protected:
     ...
-    
     template <std::size_t TSize, typename T>
     static T readData(ReadIterator& iter) {...}
     

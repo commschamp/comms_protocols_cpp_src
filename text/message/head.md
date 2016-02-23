@@ -3,7 +3,7 @@
 Most C++ developers intuitively choose to express every independent message as 
 a separate class, which inherit from a common interface. 
 
-TODO: Class hierarchy image
+![Image: Message class hierarchy](../image/message.png)
 
 This is a step to the **right** direction.
 It becomes easy and convenient to write a common code that suites all
