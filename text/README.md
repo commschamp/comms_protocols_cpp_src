@@ -31,8 +31,6 @@ applicable to non-embedded systems which don't have limitations of the latter.
 
 Plan:
 * [Messages]
-    * [Handling]
-    * [Reading and Writing]
     * [Extending Interface]    
     * [Generic Interface - inclue endianness]
 * [Fields]

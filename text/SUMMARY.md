@@ -8,5 +8,6 @@
     * [Code Examples](intro/code.md)
 * [Message](message/head.md)
     * [Reading and Writing](message/read_write.md)
-* [Transport](transport/head.md)    
+    * [Dispatching and Handling](message/dispatch_handle.md)
+* [Transport](transport/head.md)
     
