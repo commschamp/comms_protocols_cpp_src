@@ -9,5 +9,11 @@
 * [Message](message/head.md)
     * [Reading and Writing](message/read_write.md)
     * [Dispatching and Handling](message/dispatch_handle.md)
+* [Fields](fields/head.md)
+    * [Automating Basic Operations](fields/automation.md)
 * [Transport](transport/head.md)
+* [Appendices](appendix/head.md)
+    * [Appendix A - tupleForEach](appendix/a.md)
+    * [Appendix B - tupleAccumulate](appendix/b.md)
+    * [Appendix C - tupleForEachFromUntil](appendix/c.md)
     

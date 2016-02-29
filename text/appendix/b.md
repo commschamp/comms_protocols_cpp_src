@@ -1,0 +1,50 @@
+# Appendix B - tupleAccumulate
+
+Implementation of `tupleAccumulate()` function. Namespace `details` contains some
+helper classes.
+```cpp
+namespace details
+{
+
+template <std::size_t TRem>
+class TupleAccumulateHelper
+{
+public:
+    template <typename TTuple, typename TValue, typename TFunc>
+    static constexpr TValue exec(TTuple&& tuple, const TValue& value, TFunc&& func)
+    {
+        typedef typename std::decay<TTuple>::type Tuple;
+        static_assert(TRem <= std::tuple_size<Tuple>::value, "Incorrect TRem");
+
+        return TupleAccumulateHelper<TRem - 1>::exec(
+                    std::forward<TTuple>(tuple),
+                    func(value, std::get<std::tuple_size<Tuple>::value - TRem>(std::forward<TTuple>(tuple))),
+                    std::forward<TFunc>(func));
+    }
+};
+
+template <>
+class TupleAccumulateHelper<0>
+{
+
+public:
+    template <typename TTuple, typename TValue, typename TFunc>
+    static constexpr TValue exec(TTuple&& tuple, const TValue& value, TFunc&& func)
+    {
+        return value;
+    }
+};
+
+}  // namespace details
+
+template <typename TTuple, typename TValue, typename TFunc>
+constexpr TValue tupleAccumulate(TTuple&& tuple, const TValue& value, TFunc&& func)
+{
+    typedef typename std::decay<TTuple>::type Tuple;
+
+    return details::TupleAccumulateHelper<std::tuple_size<Tuple>::value>::exec(
+                std::forward<TTuple>(tuple),
+                value,
+                std::forward<TFunc>(func));
+}
+```
