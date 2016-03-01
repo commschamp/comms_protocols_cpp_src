@@ -11,6 +11,8 @@
     * [Dispatching and Handling](message/dispatch_handle.md)
 * [Fields](fields/head.md)
     * [Automating Basic Operations](fields/automation.md)
+    * [Common Field Types](fields/common_types.md)
+* [Generic Library](labrary/head.md)    
 * [Transport](transport/head.md)
 * [Appendices](appendix/head.md)
     * [Appendix A - tupleForEach](appendix/a.md)

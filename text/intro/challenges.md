@@ -23,9 +23,9 @@ convenience.
 - **bitmask values** - similar to numeric values, but each bit has a different 
 meaning
 - **strings** - may differ in the way they are serialised (zero-suffixed or size-prefixed)
-- sequences of raw bytes or other fields - may have fixed (predefined) or 
+- **lists** of raw bytes or other fields - may have fixed (predefined) or 
 variable size.
-- **bundles of multiple fields** - may be used as a single element of a **sequence**.
+- **bundles of multiple fields** - may be used as a single element of a **list**.
 - **bitfields** - similar to bundles, but internal member fields have a length of
 several bits (instead of bytes).
 
