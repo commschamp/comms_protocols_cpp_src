@@ -77,6 +77,13 @@ others have '\0' suffix to mark the end of the string.
 Some strings may be allocated a fixed size and require
 '\0' padding if its actual length is shorter.
 
+Consider how the internal string value is stored. Usually `std::string` is used.
+However, what about the bare-metal embedded systems, that disallow usage of
+dynamic memory allocation and/or exceptions? There needs to be a way to substitute
+underlying `std::string` with a custom implementation of some `StaticString`
+that exposes similar interface, but receives a maximum storage size as a template
+parameter.
+
 ## Lists
 
 There may be lists of raw bytes, list of other fields, or even a group of fields.
@@ -84,6 +91,12 @@ Similar to [Strings](#strings), the serialisation of lists may differ. Lists of
 variable size may require a prefix with their size information. Other lists
 may have fixed (predefined) size and will not require any additional size
 information.
+
+The internal storage consideration is applicable here as well. For most systems
+`std::vector` will do the job, but for bare-metal ones something else may be 
+required. For example some custom implementation of `StaticVector` that exposes
+the same public interface, but receives a maximum storage size as a template parameter.
+There must be an easy way to substitute one with another.
 
 ## Bundles
 

@@ -9,6 +9,7 @@
 * [Message](message/head.md)
     * [Reading and Writing](message/read_write.md)
     * [Dispatching and Handling](message/dispatch_handle.md)
+    * [Extending Interface](message/extend_interface.md)
 * [Fields](fields/head.md)
     * [Automating Basic Operations](fields/automation.md)
     * [Working With Fields](fields/access.md)
