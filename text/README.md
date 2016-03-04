@@ -28,12 +28,4 @@ As stated in the book's title, my main focus is a development for embedded syste
 I also make a significant effort to minimise or exclude altogether 
 dynamic memory allocation when possible. All the presented techniques are also
 applicable to non-embedded systems which don't have limitations of the latter.
-
-Plan:
-* [Messages]
-    * [Extending Interface]    
-    * [Generic Interface - inclue endianness]
-* [Fields]
-* [Transport]    
-* [Processing Loop]    
     

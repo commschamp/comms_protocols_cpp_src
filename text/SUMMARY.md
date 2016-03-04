@@ -15,6 +15,7 @@
     * [Working With Fields](fields/access.md)
     * [Common Field Types](fields/common_types.md)
 * [Generic Library](library/head.md)    
+    * [Generalising Interface](library/interface.md)
 * [Transport](transport/head.md)
 * [Appendices](appendix/head.md)
     * [Appendix A - tupleForEach](appendix/a.md)
