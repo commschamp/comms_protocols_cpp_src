@@ -1,4 +1,4 @@
-# Generalising Interface
+# Generalising Message Interface
 
 The basic generic message interface may include the following operations:
 
@@ -275,7 +275,7 @@ or no contradictory ones are used together (if such exist).
 
 The next stage in the **defining message interface** process is to define
 various chunks of interface functionality and connect them via inheritance.
-```cpp
+```cpp 
 namespace comms
 {
 // ID retrieval chunk
@@ -297,7 +297,6 @@ protected:
 template <typename TBase>
 class MessageInterfaceBigEndian : public TBase
 {
-
 protected:
     template <typename T>
     static T readData(ReadIterator& iter) {...} // use big endian
@@ -310,7 +309,6 @@ protected:
 template <typename TBase>
 class MessageInterfaceLittleEndian : public TBase
 {
-
 protected:
     template <typename T>
     static T readData(ReadIterator& iter) {...} // use little endian
@@ -339,7 +337,8 @@ protected:
 ```
 
 Note, that the interface chunks receive their base class through template
-parameters. It will allow us to connect them together using inheritance.
+parameters. It will allow us to connect them together using inheritance. Together
+they can create the required custom interface.
 
 There is a need for some extra helper classes to to implement such connection 
 logic which chooses only requested chunks and skips others.
