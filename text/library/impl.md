@@ -352,6 +352,15 @@ Please note, that `TBase` template parameter is passed to `MessageImplBuilder<>`
 which in turn passes it up the chain of possible implementation chunks, and
 at the end it turns up to be the base class of the whole hierarchy. 
 
+The full hierarchy of classes presented at the image below. 
+![Image: Full class hierarchy](../image/library_full_hierarchy.png)
+
+The total number of used classes may seem scary, but there are only two, which 
+are of any particular interest to us when implementing communication protocol.
+It's `comms::Message` to specify the interface and `comms::MessageBase` to
+provide default implementation of particular functions. All the rest are just
+implementation details.
+
 ## Summary
 
 After all this work our library contains generic `comms::Message` class that
@@ -381,9 +390,12 @@ using ActualMessage1Fields = std::tuple<
 template <typename TMessageInterface>
 class ActualMessage1 : public 
     comms::MessageBase<
-        comms::option::StaticNumIdImpl<MyMsgId_Msg1>,
-        comms::option::DispatchImpl<ActualMessage1>,
-        comms::option::FieldsImpl<ActualMessage1Fields>
+        comms::option::StaticNumIdImpl<MyMsgId_Msg1>, // provide idImpl() if needed
+        comms::option::DispatchImpl<ActualMessage1>, // provide dispatchImpl() if needed
+        comms::option::FieldsImpl<ActualMessage1Fields> // provide access to fields and
+                                                        // readImpl(), writeImpl(),
+                                                        // lengthImpl(), validImpl() 
+                                                        // functions if needed
     >
 {
 };
@@ -400,7 +412,7 @@ uses the implementation of the defined protocol.
 ```cpp
 class MyHandler; // forward declaration of the handler class.
 using MyMessage = comms::Message<
-    comms::option::MsgIdType<MyMsgId>, // add getId() operation
+    comms::option::MsgIdType<MyMsgId>, // add id() operation
     comms::option::ReadIterator<const std::uint8_t*>, // add read() operation
     comms::option::WriteIterator<std::uint8_t*> // add write() operation
     comms::option::Handler<MyHandler>, // add dispatch() operation
