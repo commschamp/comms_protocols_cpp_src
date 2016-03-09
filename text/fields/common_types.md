@@ -38,7 +38,7 @@ influence how the field is serialised and/or handled.
 The [Generic Library](../library/head.md) chapter will
 concentrate on how to generalise development of any communication protocol by
 creating a generic library and reusing it in independent implementations of
-various protocols. It will also concentrate on creation of generic field 
+various protocols. It will also explain how to create generic field 
 classes for the types listed below.
 
 ## Numeric Integral Values
