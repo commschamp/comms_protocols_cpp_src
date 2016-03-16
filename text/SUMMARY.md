@@ -25,5 +25,6 @@
     * [Appendix A - tupleForEach](appendix/a.md)
     * [Appendix B - tupleAccumulate](appendix/b.md)
     * [Appendix C - tupleForEachFromUntil](appendix/c.md)
-    * [Appendix D - tupleForEachType](appendix/d.md)    
+    * [Appendix D - tupleForEachType](appendix/d.md)
+    * [Appendix E - AlignedUnion](appendix/e.md)        
     

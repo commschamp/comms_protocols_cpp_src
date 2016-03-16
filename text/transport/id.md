@@ -15,8 +15,8 @@ The code of the layer is pretty straightforward:
 namespace comms
 {
 // TField is type of the field used to read/write message ID
-// TNextLayer is the next layer this one wraps
-template <typename TField, typename TNextLayer, ... /* other parameters */>
+// TNext is the next layer this one wraps
+template <typename TField, typename TNext, ... /* other parameters */>
 class MsgIdLayer
 {
 public:
@@ -35,8 +35,8 @@ public:
     // Type of the message ID
     typedef typename Message::MsgIdType MsgIdType;
     
-    // Redefine pointer to message type:
-    typedef ... MsgPtr;
+    // Redefine pointer to message type (described later)
+    typedef ... MsgPtr; 
     
     ErrorStatus read(MsgPtr& msgPtr, ReadIterator& iter, std::size_t len)
     {
@@ -46,7 +46,7 @@ public:
             return es;
         }
         
-        msgPtr = createMessage(field.value());
+        msgPtr = createMsg(field.value());
         if (!msgPtr) {
             // Unknown ID
             return ErrorStatus::InvalidMsgId;
@@ -74,7 +74,7 @@ public:
 private:
     MsgPtr createMsg(MsgIdType id)
     {
-        ... // TODO: create message object
+        ... // TODO: create message object (described later)
     }
     TNext m_next;
 };
@@ -233,7 +233,7 @@ the `MsgIdLayer::createMsg()` function may use
 [std::equal_range](http://en.cppreference.com/w/cpp/algorithm/equal_range)
 algorithm instead of 
 [std::lower_bound](http://en.cppreference.com/w/cpp/algorithm/lower_bound), and
-use additional parameter to specify which of the method to pick from the equal
+use additional parameter to specify which of the methods to pick from the equal
 range found:
 ```cpp
 namespace comms
@@ -258,9 +258,9 @@ private:
 } // namespace comms
 ```
 
-Please note, that `MsgIdLayer::read()` message also needs to be modified to
+Please note, that `MsgIdLayer::read()` function also needs to be modified to
 support multiple attempts to create message object with the same id, by just
-incrementing the `idx` parameter passed to `createMsg()` member function when
+incrementing the `idx` parameter, passed to `createMsg()` member function, when
 read operation fails before reporting error to the caller. I will leave it as
 an exercise to the reader.
 
@@ -284,7 +284,7 @@ protected:
     }
 }
 ```
-Note that the code above assumes that `comms::option::StaticNumIdImpl`
+Note, that the code above assumes that `comms::option::StaticNumIdImpl`
 option (described in 
 [Generalising Message Implementation](../library/impl.md) chapter)
 was used to specify numeric message ID
@@ -367,8 +367,8 @@ namespace comms
 {
 // TField is type of the field used to read/write message ID
 // TAllMessages is all messages bundled in std::tuple.
-// TNextLayer is the next layer this one wraps
-template <typename TField, typename TAllMessages, typename TNextLayer>
+// TNext is the next layer this one wraps
+template <typename TField, typename TAllMessages, typename TNext>
 class MsgIdLayer
 {
 public:
@@ -430,4 +430,258 @@ private:
 ```
 
 ## Allocating Message Object
+
+At this stage, the only missing piece of information is definition of the
+smart pointer type responsible to hold the allocated message object (`MsgPtr`)
+and allowing "in place" allocation instead of using dymaic memory.
+
+When dynamic memory allocation is allowed, everything is simple, just use
+`std::unique_ptr` with standard deleter. However, it is a bit more difficult 
+when such allocations are not allowed.
+
+Let's start with the calculation of the buffer size which is big enough to 
+hold any message in the provided `AllMessages` bundle. It is similar to the
+size of the `union` below.
+```cpp
+union AllMessagesU
+{
+    ActualMessage1 msg1;
+    ActualMessage2 msg2;
+    ...
+};
+```
+
+However, all the required message types are provided as `std::tuple`, not 
+as `union`. What we need is something like 
+[std::aligned_union](http://en.cppreference.com/w/cpp/types/aligned_union), but
+for the the types already bundled in `std::tuple`. It turns out it is very easy to
+implement using template specialisation:
+```cpp
+template <typename TTuple>
+struct TupleAsAlignedUnion;
+
+template <typename... TTypes>
+struct TupleAsAlignedUnion<std::tuple<TTypes...> >
+{
+    typedef typename std::aligned_union<0, TTypes...>::type Type;
+};
+
+```
+
+**NOTE**, that some compilers (gcc v5.0 and below) may not implement 
+`std::aligned_union` type, but they do implement
+[std::aligned_storage](http://en.cppreference.com/w/cpp/types/aligned_storage).
+The [Appendix E](../appendix/e.md) shows how to implement aligned union
+functionality using `std::aligned_storage`.
+
+The "in place" allocation area, that can fit in any message type listed in 
+`AllMessages` tuple, can be defined as:
+```cpp
+typedef typename TupleAsAlignedUnion<AllMessages>::Type InPlaceStorage;
+```
+
+The "in place" allocation is simple:
+```cpp
+InPlaceStorage inPlaceStorage;
+new (&inPlaceStorage) TMessage(); // TMessage is type of the message being created.
+```
+
+The "in place" allocation requires "in place" deletion, i.e. destruction of
+the allocated element.
+```cpp
+template <typename T>
+struct InPlaceDeleter
+{
+    void operator()(T* obj) {
+        obj->~T();
+    }
+};
+```
+The smart pointer to `Message` interface class may be defined as 
+`std::unique_ptr<Message, InPlaceDeleter<Message> >`.
+
+Now let's define two independent allocation policies with the similar interface.
+One for dynamic memory allocation, and the other for "in place" allocation.
+```cpp
+template <typename TMessageInterface>
+struct DynMemAllocationPolicy
+{
+    typedef std::unique_ptr<TMessageInterface> MsgPtr;
+    
+    template <typename TMessage>
+    MsgPtr allocMsg()
+    {
+        return MsgPtr(new TMessage());
+    }
+}
+
+template <typename TMessageInterface, typename TAllMessages>
+class InPlaceAllocationPolicy
+{
+public:
+    template <typename T>
+    struct InPlaceDeleter {...};
+
+    typedef std::unique_ptr<TMessageInterface, InPlaceDeleter<TMessageInterface> > MsgPtr;
+    
+    template <typename TMessage>
+    MsgPtr allocMsg()
+    {
+        new (&m_storage) TMessage();
+        return MsgPtr(
+            reinterpret_cast<TMessageInterface*>(&m_storage),
+            InPlaceDeleter<TMessageInterface>());
+    }
+    
+private:
+
+    typedef typename TupleAsAlignedUnion<TAllMessages>::Type InPlaceStorage;
+    InPlaceStorage m_storage;
+}
+```
+Please pay attention, that the implementation of `InPlaceAllocationPolicy` is 
+the simplest one. In production quality code, it is recommended to insert 
+protection against double allocation
+in the used storage area by introducing boolean flag indicating that the
+storage area is or isn't free. The pointer/reference to such flag must also be
+passed to the deleter object, which is responsible to update it when deletion takes
+place.
+
+The choice of the allocation policy used in `comms::MsgIdLayer` may be implemented
+using the already familiar technique of using options.
+```cpp
+namespace comms
+{
+template <
+    typename TField, 
+    typename TAllMessages, 
+    typename TNext, 
+    typename... TOptions>
+class MsgIdLayer
+{
+    ...
+};
+} // namespace comms
+```
+
+If no option is specified, the `DynMemAllocationPolicy` must be chosen. To 
+force "in place" message allocation a separate option may be defined and
+passed as template parameter to `comms::MsgIdLayer`.
+```cpp
+namespace comms
+{
+namespace option
+{
+struct InPlaceAllocation {};
+} // namespace option
+} // namespace comms
+```
+
+Using the familiar technique of options parsing we can create a structure
+where a boolean value `HasInPlaceAllocation` defaults to `false` and can be
+set to `true` if the option mentioned above is used. As the result the policy choice
+may be implemented as:
+```cpp
+namespace comms
+{
+template <
+    typename TField, 
+    typename TAllMessages, 
+    typename TNext, 
+    typename... TOptions>
+class MsgIdLayer
+{
+public:
+    // TOptions parsed into struct
+    typedef ... ParsedOptions; 
+    
+    // Take type of the message interface from the next layer
+    typedef typename TNext::Message Message;
+    
+    // Choice of the allocation policy
+    typedef typename std::conditional<
+        ParsedOptions::HasInPlaceAllocation,
+        InPlaceAllocationPolicy<Message, TAllMessages>,
+        DynMemAllocationPolicy<Message>
+    >::type AllocPolicy;
+    
+    // Redefine pointer to message type
+    typedef typename AllocPolicy::MsgPtr MsgPtr;
+    
+    ...
+private:
+    AllocPolicy m_policy;
+};
+} // namespace comms
+```
+What remains to be done is to provide the `ActualFactoryMethod<>` class with
+an ability to use allocation policy for allocating the message. Please
+remember, that `ActualFactoryMethod<>` objects are stateless static ones. It
+means that the allocation policy object needs to passed as the parameter to
+its allocation function. 
+```cpp
+namespace comms
+{
+template <
+    typename TField, 
+    typename TAllMessages, 
+    typename TNext, 
+    typename... TOptions>
+class MsgIdLayer
+{
+public:
+    // Choice of the allocation policy
+    typedef ... AllocPolicy;
+    
+    // Redefine pointer to message type
+    typedef typename AllocPolicy::MsgPtr MsgPtr;
+    
+    ...
+private:
+    class FactoryMethod
+    {
+    public:
+        MsgPtr createMsg(AllocPolicy& policy) const
+        {
+            return createMsgImpl(policy);
+        }
+
+    protected:
+        virtual MsgPtr createMsgImpl(AllocPolicy& policy) const = 0;
+    };
+    
+    template <typename TActualMessage>
+    class ActualFactoryMethod : public FactoryMethod
+    {
+    protected:
+        virtual MsgPtr createMsgImpl(AllocPolicy& policy) const
+        {
+            return policy.allocMsg<TActualMessage>();
+        }
+    }
+
+    AllocPolicy m_policy;
+};
+} // namespace comms
+```
+
+## Summary
+
+The final implementation of the ID Layer (`comms::MsgIdLayer`) is a generic 
+piece of code. It receives a list of message classes, it must recognise, 
+as a template parameter. The whole logic of creating the right message object
+given the numeric ID of the message is automatically generated by the compiler
+using only static memory. When new message is added to the protocol, what needs
+to be updated is the bundle of available message classes (`AllMessages`). Nothing
+else is required. Recompilation of the sources will generate a code that
+supports new message as well. The implementation of `comms::MsgIdLayer` 
+above has `O(log(n))` runtime complexity of finding the right factory method
+and creating appropriate message object. It also supports multiple variants
+of the same message which are implemented as different message classes, but
+report the same message ID. By default `comms::MsgIdLayer` uses dynamic
+memory to allocate new message object. It can easily be changed by providing
+`comms::option::InPlaceAllocation` option to it, which will force usage of
+"in place" allocation. The "in place" allocation may create one message at
+a time. In order to be able to create a new message object, the previous
+one must be destructed and de-allocated before.
 
