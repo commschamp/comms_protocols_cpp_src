@@ -1,0 +1,146 @@
+# SIZE Layer
+
+This layer is responsible to handle the remaining length information. 
+- During read operation it reads the information about number of
+bytes required to complete the message deserialisation and compares
+it to the number of bytes available for reading. If input buffer has
+enough data, the read operation of the next (wrapped) layer is invoked.
+- During write operation, the layer must calculate and write the
+number of bytes required to serialise the message prior to invoking the
+write operation of the next (wrapped) layer.
+
+```cpp
+namespace comms
+{
+// TField is type of the field used to read/write SIZE information
+// TNext is the next layer this one wraps
+template <typename TField, typename TNext>
+class MsgSizeLayer
+{
+public:
+    // Type of the field object used to read/write SIZE information.
+    typedef TField Field;
+    
+    // Take type of the ReadIterator from the next layer
+    typedef typename TNext::ReadIterator ReadIterator;
+
+    // Take type of the WriteIterator from the next layer
+    typedef typename TNext::WriteIterator WriteIterator;
+
+    // Take type of the message interface from the next layer
+    typedef typename TNext::Message Message;
+    
+    // Take type of the message interface pointer from the next layer
+    typedef typename TNext::MsgPtr MsgPtr; 
+    
+    template <typename TMsgPtr>
+    ErrorStatus read(TMsgPtr& msgPtr, ReadIterator& iter, std::size_t len)
+    {
+        Field field;
+        auto es = field.read(iter, size);
+        if (es != ErrorStatus::Success) {
+            return es;
+        }
+
+        auto actualRemainingSize = (size - field.length());
+        auto requiredRemainingSize = static_cast<std::size_t>(field.value());
+
+        if (actualRemainingSize < requiredRemainingSize) {
+            return ErrorStatus::NotEnoughData;
+        }
+
+        es = reader.read(msgPtr, iter, requiredRemainingSize, nullptr);
+        if (es == ErrorStatus::NotEnoughData) {
+            return ErrorStatus::ProtocolError;
+        }
+        return es;
+    } 
+    
+    ErrorStatus write(const Message& msg, WriteIterator& iter, std::size_t len) const
+    {
+        Field field;
+        field.value() = m_next.length(msg);
+        auto es = field.write(iter, size);
+        if (es != ErrorStatus::Success) {
+            return es;
+        }
+        return m_next.write(msg, iter, size - field.length());
+    }   
+    
+private:
+    TNext m_next;
+};
+} // namespace comms
+```
+Please note, that reference to the smart pointer holding the message object is passed to
+the `read()` function using *undefined* type (template parameter) instead of
+using the `MsgPtr` internal type. 
+Some communication protocols may serialise `SIZE` information before the `ID`, 
+others may do the opposite. 
+The `SIZE` layer is not aware of what other layers it wraps. 
+If `ID` information is
+serialised before the `SIZE`, the `MsgPtr` type definition is probably taken
+from [PAYLOAD Layer](payload.md), which is defined to be `void`.
+
+Also note, that `write()` function requires knowledge of how many bytes it
+will take to the next layer to serialise the message. It requires every layer
+to define `length(...)` member function in addition to `read()` and `write()`.
+
+The `length()` member function of the [PAYLOAD Layer](payload.md) may be defined
+as: 
+```cpp
+namespace comms
+{
+template <typename TMessage>
+class MsgDataLayer
+{
+public:
+    static constexpr std::size_t length(const TMessage& msg)
+    {
+        return msg.length();
+    }
+};
+} // namespace comms
+```
+
+The `length()` member function of the [ID Layer](id.md) may be defined
+as: 
+```cpp
+namespace comms
+{
+template <
+    typename TField, 
+    typename TAllMessages, 
+    typename TNext, 
+    typename... TOptions>
+class MsgIdLayer
+{
+public:
+    std::size_t length(const Message& msg)
+    {
+        TField field;
+        field.value() = msg.id();
+        return field.length() + m_next.length(msg);
+    }
+};
+} // namespace comms
+```
+
+And the `length()` member function of the [SIZE Layer](size.md) may be defined
+as: 
+```cpp
+namespace comms
+{
+template <typename TField, typename TNext>
+class MsgSizeLayer
+{
+public:
+    std::size_t length(const Message& msg)
+    {
+        TField field;
+        field.value() = m_next.length(msg);
+        return field.length() + field.value();
+    }
+};
+} // namespace comms
+```

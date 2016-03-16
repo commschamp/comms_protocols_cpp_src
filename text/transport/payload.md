@@ -71,7 +71,7 @@ public:
 } // namespace comms
 ```
 Please note that `read()` member function expects to receive a reference to 
-the smart pointer, which holds allocated message object, as a firt parameter. 
+the smart pointer, which holds allocated message object, as the first parameter. 
 The type of the pointer is not known yet. 
 As the result type of such pointer is provided via
 template parameter.

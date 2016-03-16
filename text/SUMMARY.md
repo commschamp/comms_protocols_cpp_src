@@ -21,6 +21,7 @@
 * [Transport](transport/head.md)
     * [PAYLOAD Layer](transport/payload.md)
     * [ID Layer](transport/id.md)
+    * [SIZE Layer](transport/size.md)
 * [Appendices](appendix/head.md)
     * [Appendix A - tupleForEach](appendix/a.md)
     * [Appendix B - tupleAccumulate](appendix/b.md)
