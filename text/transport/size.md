@@ -116,7 +116,7 @@ template <
 class MsgIdLayer
 {
 public:
-    std::size_t length(const Message& msg)
+    std::size_t length(const Message& msg) const
     {
         TField field;
         field.value() = msg.id();
@@ -135,7 +135,7 @@ template <typename TField, typename TNext>
 class MsgSizeLayer
 {
 public:
-    std::size_t length(const Message& msg)
+    std::size_t length(const Message& msg) const
     {
         TField field;
         field.value() = m_next.length(msg);
