@@ -41,7 +41,7 @@ public:
     ErrorStatus read(MsgPtr& msgPtr, ReadIterator& iter, std::size_t len)
     {
         Field field;
-        auto es = field.read(iter, size);
+        auto es = field.read(iter, len);
         if (es != ErrorStatus::Success) {
             return es;
         }

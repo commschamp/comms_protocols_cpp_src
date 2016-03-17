@@ -55,17 +55,17 @@ public:
     static ErrorStatus read(
         TMsgPtr& msgPtr,
         ReadIterator& iter,
-        std::size_t size)
+        std::size_t len)
     {
-        return msgPtr->read(iter, size);
+        return msgPtr->read(iter, len);
     }
 
     static ErrorStatus write(
         const Message& msg,
         WriteIterator& iter,
-        std::size_t size)
+        std::size_t len)
     {
-        return msg.write(iter, size);
+        return msg.write(iter, len);
     }
 };
 } // namespace comms

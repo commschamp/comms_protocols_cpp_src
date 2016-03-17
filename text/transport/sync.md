@@ -30,7 +30,7 @@ public:
     ErrorStatus read(TMsgPtr& msgPtr, ReadIterator& iter, std::size_t len)
     {
         Field field;
-        auto es = field.read(iter, size);
+        auto es = field.read(iter, len);
         if (es != ErrorStatus::Success) {
             return es;
         }
@@ -40,17 +40,17 @@ public:
             return ErrorStatus::ProtocolError;
         }
 
-        return m_next.read(msgPtr, iter, size - field.length());
+        return m_next.read(msgPtr, iter, len - field.length());
     } 
     
     ErrorStatus write(const Message& msg, WriteIterator& iter, std::size_t len) const
     {
         Field field;
-        auto es = field.write(iter, size);
+        auto es = field.write(iter, len);
         if (es != ErrorStatus::Success) {
             return es;
         }
-        return m_next.write(msg, iter, size - field.length());
+        return m_next.write(msg, iter, len - field.length());
     }   
     
     std::size_t length(const TMessage& msg) const

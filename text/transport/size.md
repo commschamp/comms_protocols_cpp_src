@@ -1,6 +1,7 @@
 # SIZE Layer
 
 This layer is responsible to handle the remaining length information. 
+
 - During read operation it reads the information about number of
 bytes required to complete the message deserialisation and compares
 it to the number of bytes available for reading. If input buffer has
@@ -37,12 +38,12 @@ public:
     ErrorStatus read(TMsgPtr& msgPtr, ReadIterator& iter, std::size_t len)
     {
         Field field;
-        auto es = field.read(iter, size);
+        auto es = field.read(iter, len);
         if (es != ErrorStatus::Success) {
             return es;
         }
 
-        auto actualRemainingSize = (size - field.length());
+        auto actualRemainingSize = (len - field.length());
         auto requiredRemainingSize = static_cast<std::size_t>(field.value());
 
         if (actualRemainingSize < requiredRemainingSize) {
@@ -60,11 +61,11 @@ public:
     {
         Field field;
         field.value() = m_next.length(msg);
-        auto es = field.write(iter, size);
+        auto es = field.write(iter, len);
         if (es != ErrorStatus::Success) {
             return es;
         }
-        return m_next.write(msg, iter, size - field.length());
+        return m_next.write(msg, iter, len - field.length());
     }   
     
 private:
