@@ -24,6 +24,7 @@
     * [SIZE Layer](transport/size.md)
     * [SYNC Layer](transport/sync.md)
     * [CHECKSUM Layer](transport/checksum.md)
+    * [Defining Protocol Stack](transport/stack.md)
 * [Appendices](appendix/head.md)
     * [Appendix A - tupleForEach](appendix/a.md)
     * [Appendix B - tupleAccumulate](appendix/b.md)
