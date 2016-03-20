@@ -1,7 +1,7 @@
 # Dispatching and Handling
 
 When a new message arrives, its appropriate object is created and the contents
-are deserialised using `read()` member function described in previous section. 
+are deserialised using `read()` member function described in previous chapter. 
 It is time to dispatch it to an appropriate handling function. Many developers
 use the `switch` statement or even a sequence of `dynamic_cast`s to identify
 the real type of the message object and call appropriate handling function. 

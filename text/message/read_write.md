@@ -3,7 +3,7 @@
 When new raw data bytes are received over some I/O link, they need to be 
 deserialised into the custom message object, then dispatched to an appropriate
 handling function. When continuing **message as an object** concept, expressed in
-previous section, it becomes convenient to make a reading/writing functionality
+previous chapter, it becomes convenient to make a reading/writing functionality
 a responsibility of the message object itself.
 
 ```cpp

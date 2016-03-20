@@ -8,7 +8,7 @@ Usually developers implement some
 [boilerplate code](https://en.wikipedia.org/wiki/Boilerplate_code)
 of explicitly reading and writing all message fields in appropriate functions,
 such as `readImpl()` and `writeImpl()` functions described in
-[Reading and Writing](../message/read_write.md) section. The primary 
+[Reading and Writing](../message/read_write.md) chapter. The primary 
 disadvantage of this approach is an increased development effort when contents 
 of some message need to be modified, i.e. some new field is added, 
 or existing one removed, even when the type of an existing field changes. 

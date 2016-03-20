@@ -5,7 +5,7 @@ some portions of polymorphic behaviour defined in the the interface class `Messa
 Such implementation eliminated common boilerplate code used in every `ActualMessage*`
 class.
 
-This section is going to generalise the implementation of `MessageBase` into
+This chapter is going to generalise the implementation of `MessageBase` into
 the generic `comms::MessageBase` class which is communication protocol independent
 and can be re-used in any other development.
 
@@ -15,12 +15,12 @@ The generic `comms::MessageBase` class must be able to:
 virtual member function, when such ID is known at compile time.
 - provide common dispatch functionality, i.e. implement `dispatchImpl()`
 virtual member function, described in 
-[Message / Dispatching and Handling](../message/dispatch_handle.md) section.
+[Message / Dispatching and Handling](../message/dispatch_handle.md) chapter.
 - support extension of the default message interface, described in
-[Message / Extending Interface](../message/extend_interface.md) section.
+[Message / Extending Interface](../message/extend_interface.md) chapter.
 - automate common operations on fields, i.e. implement `readImpl()`, `writeImpl()`,
 `lengthImpl()`, etc..., described in 
-[Fields / Automating Basic Operations](../fields/automation.md) section.
+[Fields / Automating Basic Operations](../fields/automation.md) chapter.
 
 Just like common `comms::Message` interface class, the `comms::MessageBase`
 will also receive options to define its behaviour.
@@ -64,7 +64,7 @@ struct FieldsImpl {};
 ## Parsing the Options
 
 The options provided to the `comm::MessageBase` class need to be parsed in a
-very similar way as it was with `comms::Message` in the previous section.
+very similar way as it was with `comms::Message` in the previous chapter.
 
 Starting with initial version of the options struct:
 ```cpp

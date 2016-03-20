@@ -18,4 +18,4 @@ Our ultimate goal would be to create a generic library that can be used to imple
 any communication protocol with simple declarative statements of types and 
 classes. Such library will significantly boost the development process and
 allow to avoid the code duplication and *deja-vu* feeling mentioned in
-previous section.
+previous chapter.

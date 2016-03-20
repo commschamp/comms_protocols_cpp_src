@@ -82,7 +82,7 @@ struct Handler{};
 } // namespace comms
 ```
 
-Our **PRIMARY OBJECTIVE** for this section is to use meta-programming techniques
+Our **PRIMARY OBJECTIVE** for this chapter is to use meta-programming techniques
 and to be able to define a common message interface class with multiple
 variations of public interface.
 

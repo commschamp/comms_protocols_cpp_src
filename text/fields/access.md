@@ -33,7 +33,7 @@ using ActualMessage1Fields = std::tuple<
 class ActualMessage1 : public MessageBase<ActualMessage1Fields> {...};
 ```
 
-The [Dispatching and Handling](../message/dispatch_handle.md) section described
+The [Dispatching and Handling](../message/dispatch_handle.md) chapter described
 the efficient way to dispatch message object to its handler. The appropriate
 handling function may access its field's value using the following code 
 flow:
