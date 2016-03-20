@@ -1,0 +1,18 @@
+# Achievements
+
+After all this effort of creating the generic `comms` library, 
+let's summarise what has been achieved.
+
+- The communication protocol implementation becomes easy and straightforward
+process, using mostly declarative statements of classes and types definitions
+without unnecessary boilerplate code.
+- The default logic provided by the library can easily be extended and/or
+overridden using class inheritance and virtual functions.
+- The protocol implementation doesn't enforce any restrictions on data structures
+being used, and as a result it can be reused in any system, including bare-metal
+ones.
+- There is no dependency on any specific I/O link and the way the data is
+being communicated. 
+- The application level messages and transport data are completely independent,
+which allows usage of the same application level messages over different I/O
+links, which require different transport wrapping, at the same time.
