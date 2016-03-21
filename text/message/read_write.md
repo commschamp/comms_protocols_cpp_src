@@ -57,7 +57,7 @@ enum class ErrorStatus
 };
 ```
 
-Let's assume that at the stage of parsing transport wrapping information, the
+Let's assume, that at the stage of parsing transport wrapping information, the
 ID of the message was retrieved and appropriate actual message object was
 created in an **efficient** way. This whole process will be described later in
 the [Transport](../transport/head.md) chapter.
@@ -93,8 +93,8 @@ template <typename TReadIter, typename TWriteIter>
 class Message
 {
 public:
-    typedef TReadIter ReadIterator;
-    typedef TWriteIter WriteIterator;
+    using ReadIterator = TReadIter;
+    using WriteIterator = TWriteIter;
     
     ErrorStatus read(ReadIterator& iter, std::size_t len) {
         return readImpl(iter, len);
@@ -116,7 +116,7 @@ protected:
 template <typename TReadIter, typename TWriteIter>
 class ActualMessage1 : public Message<TReadIter, TWriteIter>
 {
-    typedef Message<TReadIter, TWriteIter> Base;
+    using Base = Message<TReadIter, TWriteIter>;
 public:
     using Base::ReadIterator;
     using Base::WriteIterator;
@@ -132,7 +132,7 @@ Please note, that iterators are passed by reference, which allows the increment
 and assignment operations required to implement serialisation/deserialisation
 functionality.
 
-Also note that the same implementation of the read/write operations can be used
+Also note, that the same implementation of the read/write operations can be used
 in any system with any restrictions. For example, the bare-metal embedded system
 cannot use dynamic memory allocation and must serialise the outgoing messages
 into a static array, which forces the definition of the write iterator to be
@@ -168,7 +168,7 @@ std::vector<std::uint8_t> outBuf;
 LinWriteIter iter = std::back_inserter(outBuf);
 
 LinActualMessage1 msg;
-Lin.write(iter, outBuf.max_size());
+msg.write(iter, outBuf.max_size());
 auto writtenCount = outBuf.size();
 
 ```
@@ -183,11 +183,6 @@ actual message classes.
 template <typename TReadIter, typename TWriteIter>
 class Message
 {
-public:
-    typedef TReadIter ReadIterator;
-    typedef TWriteIter WriteIterator;
-    ...
-    
 protected:
     template <typename T>
     static T readData(ReadIterator& iter) {...}
@@ -211,13 +206,7 @@ but with additional template parameter that specifies how many bytes to read/wri
 template <typename TReadIter, typename TWriteIter>
 class Message
 {
-public:
-    typedef TReadIter ReadIterator;
-    typedef TWriteIter WriteIterator;
-    ...
-    
 protected:
-    ...
     template <std::size_t TSize, typename T>
     static T readData(ReadIterator& iter) {...}
     

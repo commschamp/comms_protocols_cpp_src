@@ -10,8 +10,8 @@ template <typename TReadIterator, typename TWriteIterator>
 class Message
 {
 public:
-    typedef TReadIterator ReadIterator;
-    typedef TWriteIterator WriteIterator;
+    using ReadIterator = TReadIterator;
+    using WriteIterator = TWriteIterator;
     
     // Read the message
     ErrorStatus read(ReadIterator& iter, std::size_t len)
@@ -65,7 +65,7 @@ class ActualMessage2 : public MessageBase<TReadIterator, TWriteIterator, ActualM
 ```
 
 Then, after a while a new application needs to be developed, which monitors
-the I/O link and dumps all the message traffic into stdout and/or *.csv file. This
+the I/O link and dumps all the message traffic into standard output and/or *.csv file. This
 application requires knowledge about names of the messages, and it would be 
 convenient to add an appropriate function into the common message interface and
 reuse the existing implementation. There is 
@@ -79,7 +79,6 @@ template <...>
 class Message
 {
 public:
-    ...
 #ifdef HAS_NAME    
     const char* name() const
     {
@@ -99,7 +98,6 @@ class MessageBase : public Message<...> {...};
 template <>
 class ActualMessage1 : public MessageBase<...>
 {
-    ...
 protected:
 #ifdef HAS_NAME    
     virtual const char* nameImpl() const
@@ -193,8 +191,8 @@ common protocol code like this:
 using NewReadIterator = ...;
 using NewWriteIterator = ...;
 using NewMessage = ExtMessage<NewReadIterator, NewWriteIterator>;
-using NewMessage1 = ActualMessage1<NewMessage>;
-using NewMessage2 = ActualMessage2<NewMessage>;
+using NewMessage1 = ExtActualMessage1<NewMessage>;
+using NewMessage2 = ExtActualMessage2<NewMessage>;
 ```
 
 As a result, no extra modifications to the original source code of the 
