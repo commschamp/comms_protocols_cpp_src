@@ -2,12 +2,13 @@
 
 There are multiple challenges that need to be considered prior to starting 
 implementation of any communication protocol. It will guide us into the 
-right direction when designing an architecture. Let's take a careful look at
-them one by one.
+right direction when designing an overall architecture. 
 
-## Code Duplication
+## Code Boilerplating
 
-As a whole, most of the communication protocols are very similar, they define 
+The communication protocols are notorious for creating a
+[boilerplate code](https://en.wikipedia.org/wiki/Boilerplate_code).
+As a whole, most of them are very similar, they define 
 various messages with their internal fields, define serialisation rules for all 
 the fields and wrap them in some kind of transport information to ensure safe 
 delivery of the message over the I/O link. 
@@ -21,8 +22,8 @@ ranges of valid values, etc...
 of valid values, and `enum` type is usually used to operate the values, just for
 convenience.
 - **bitmask values** - similar to numeric values, but each bit has a different 
-meaning
-- **strings** - may differ in the way they are serialised (zero-suffixed or size-prefixed)
+meaning.
+- **strings** - may differ in the way they are serialised (zero-suffixed or size-prefixed).
 - **lists** of raw bytes or other fields - may have fixed (predefined) or 
 variable size.
 - **bundles of multiple fields** - may be used as a single element of a **list**.
@@ -38,11 +39,11 @@ There is a strong feeling that the code is being duplicated, but there is no
 obvious and/or easy way to minimise it.
 
 ## Runtime Efficiency
-In most cases the messages are differentiated by some numeric value ID. When
-the new message is received over some I/O link, it needs to be identified and
+In most cases the messages are differentiated by some numeric ID value. When
+a new message is received over some I/O link, it needs to be identified and
 dispatched to appropriate handling function. Many developers implement this logic
-using a `switch` statement. However, after about 7 - 10 `case`-s such dispatch
-mechanism becomes quite inefficient and its inefficiency grows with number of
+using simple `switch` statement. However, after about 7 - 10 `case`s such dispatch
+mechanism becomes quite inefficient, and its inefficiency grows with number of
 new messages being introduced. When not having a limitation of inability to
 use dynamic memory allocation and/or exception, some developers resort to
 standard collections (`std::map` for example) of pointer to functions or
@@ -62,8 +63,8 @@ message was introduced. Failure to do so results in unexpected bugs and extended
 development effort to find and fix them.
 
 What about extending an existing message by adding an extra field at the end or
-even in the middle? How easy it's going to be and what development time needs
-to be spent? How error-prone it's going to be? 
+even in the middle? How easy is it going to be and how much development time needs
+to be spent? How error-prone is it going to be? 
 
 ## Inter-System Reuse
 Quite often the implementation of the same protocol needs to be reused between
@@ -74,16 +75,18 @@ However, managing the I/O link and usage of various data structures may
 be different for both of them. Making the implementation of the communication
 protocol system dependent may make such reuse impossible.
 
-Sometimes different teams are responsible for implementation of different components
-that reside on different ends of the communication link. 
-Even in this case, making the implementation of the
-communication protocol system dependent is a bad idea. It may be necessary to
-develop some additional protocol testing tools because the other team is
-not ready yet.
+Sometimes different teams are responsible for implementation of different systems,
+that use the same communication protocol but that reside on different ends of 
+the communication link. Usually such teams make an 
+upfront decision not to share the implementation of the communication 
+protocol they use. Even in this case, making the implementation 
+system dependent is a bad idea. It may be necessary to
+develop some additional protocol testing tools because the other team has not
+completed the development of their product in time.
 
 ## Intra-System Reuse
 It is not uncommon for various embedded systems to add extra I/O interfaces
-in the next generations of the device hardware which can be used to communicate with
+in the next generations of the device hardware, which can be used to communicate with
 other devices using the same protocol. For example, the first generation of
 some embedded sensor communicates its data over TCP/IP network link to 
 some data management server. The second generation adds a Bluetooth interface
@@ -94,4 +97,4 @@ However, the transport wrapping information for TCP/IP and Bluetooth will
 obviously differ. If initial implementation of the communication protocol 
 hasn't properly separated the application level messages and wrapping transport
 data, it's going to be difficult, time consuming and error-prone to introduce
-a new Bluetooth I/O link.
+a new communication channel via Bluetooth I/O link.

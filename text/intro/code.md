@@ -24,7 +24,7 @@ public:
     }
     
 protected:
-    virtual void someFunctionImpl() = 0;    
+    virtual void someFunctionImpl() = 0;
 };
 
 class Derived : public SomeInterface
@@ -34,10 +34,10 @@ protected:
 };
 ```
 
-The non virtual interface function is supposed to check pre and post
-conditions of the polymorphic invocation if such exist as well as execute
+The non virtual interface function is supposed to check pre- and 
+post-conditions of the polymorphic invocation if such exist as well as execute
 some common code if such is required. I tend to write the code similar to
-above even when there are no pre and post conditions to check and no common
+above even when there are no pre- and post-conditions to check and no common
 code to execute. Please don't be surprised when seeing such constructs throughout
 the book.
 
