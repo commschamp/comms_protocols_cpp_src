@@ -1,8 +1,8 @@
 # Common Field Types
 
 The majority of communication protocols use relatively small set of various
-field types. However, the number of various ways used to serialise these fields
-as well as handle them in different parts of the code may be significantly bigger.
+field types. However, the number of various ways used to serialise these fields,
+as well as handle them in different parts of the code, may be significantly bigger.
 
 It would be impractical to create a separate class for each and every variant
 of the same type fields. That's why there is a need to use template parameters
@@ -32,7 +32,7 @@ private:
 ```
 
 Below is a description of most common fields used by majority of 
-binary communication protocols with the list of possible variations that can
+binary communication protocols with the list of possible variations, that can
 influence how the field is serialised and/or handled. 
 
 The [Generic Library](../library/head.md) chapter will
@@ -53,7 +53,7 @@ not enough. Some extra work may be required to support lengths, such as 3, 5, 6,
 for signed values, such as adding some predefined offset prior
 to serialisation to make sure that the value being serialised is non-negative. When
 value deserialised, the same offset must be subtracted to get the actual value.
-- May have different serialisation length, based on the value being serialised,
+- May have variable serialisation length, based on the value being serialised,
 such as having [Base-128](https://en.wikipedia.org/wiki/Variable-length_quantity)
 encoding.
 
@@ -72,7 +72,7 @@ values.
 
 ## Strings
 
-Some protocol serialise strings by prefixing the string itself with its size,
+Some protocols serialise strings by prefixing the string itself with its size,
 others have '\0' suffix to mark the end of the string. 
 Some strings may be allocated a fixed size and require
 '\0' padding if its actual length is shorter.

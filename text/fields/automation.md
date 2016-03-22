@@ -10,16 +10,17 @@ the compiler we have to:
 - Provide the same interface for every message field.
 - Introduce a meta-programming friendly structure to hold all the fields, such
 as `std::tuple`.
-- Use meta-programming techniques to invoke the required read/write function of
+- Use meta-programming techniques to iterate over every field in the
+bundle and invoke the required read/write function of
 every field.
 
-Let's assume that all the message fields provide the following interface:
+Let's assume, all the message fields provide the following interface:
 ```cpp
 class SomeField
 {
 public:
     // Value storage type definition
-    typedef ... ValueType;
+    using ValueType = ...;
     
     // Provide an access to the stored value
     ValueType& value();
@@ -56,7 +57,6 @@ public:
         Field3
     >;
     ...
-    
 protected:
     virtual ErrorStatus readImpl(ReadIterator& iter, std::size_t len) override
     {
@@ -68,13 +68,12 @@ protected:
         ...// invoke write() member function of every field
     }
     
-    
 private:
     AllFields m_fields;
 };
 ```
 
-What remains to be done is to implement automatic invocation of `read()` and
+What remains is to implement automatic invocation of `read()` and
 `write()` member function for every field in `AllFields` tuple.
 
 Let's take a look at standard algorithm 
@@ -82,7 +81,7 @@ Let's take a look at standard algorithm
 Its last parameter is a functor object, which must define appropriate 
 `operator()` member function. This function is invoked for every element being
 iterated over. What we need is something similar, but 
-instead of receiving iterators, it must receive a full tuple object and the
+instead of receiving iterators, it must receive a full tuple object, and the
 `operator()` of provided functor must be able to receive any type, i.e. be a template
 function.
 
@@ -91,7 +90,7 @@ As the result the signature of such function may look like this:
 template <typename TTuple, typename TFunc>
 void tupleForEach(TTuple&& tuple, TFunc&& func);
 ```
-where `tuple` is l- or r-value reference to any tuple object, and `func` is
+where `tuple` is l- or r-value reference to any `std::tuple` object, and `func` is
 l- or r-value reference to a functor object that must define the following 
 public interface:
 ```cpp
@@ -103,7 +102,7 @@ struct MyFunc
 ```
 
 Implementation of the`tupleForEach()` function described above can be a nice
-exercise for practising meta-programming skills. 
+exercise for practising some meta-programming skills. 
 [Appendix A](../appendix/a.md) contains the required code if help is required.
 
 ## Implementing Read
@@ -128,7 +127,6 @@ public:
             // Error occurred earlier, don't continue with read
             return;
         }
-            
         m_status = field.read(m_iter, m_len);
         if (m_status == ErrorStatus::Success) {
             m_len -= field.length();
@@ -149,8 +147,6 @@ class ActualMessage1 : public Message
 {
 public:
     using AllFields = std::tuple<...>;
-    ...
-    
 protected:
     virtual ErrorStatus readImpl(ReadIterator& iter, std::size_t len) override
     {
@@ -158,7 +154,6 @@ protected:
         tupleForEach(m_fields, FieldReader(status, iter, len));
         return status;
     }
-    
     
 private:
     AllFields m_fields;
@@ -192,7 +187,6 @@ public:
             // Error occurred earlier, don't continue with write
             return;
         }
-            
         m_status = field.write(m_iter, m_len);
         if (m_status == ErrorStatus::Success) {
             m_len -= field.length();
@@ -213,7 +207,6 @@ class ActualMessage1 : public Message
 {
 public:
     using AllFields = std::tuple<...>;
-    ...
     
 protected:
     virtual ErrorStatus writeImpl(WriterIterator& iter, std::size_t len) const override
@@ -222,7 +215,6 @@ protected:
         tupleForEach(m_fields, FieldWriter(status, iter, len));
         return status;
     }
-    
     
 private:
     AllFields m_fields;
@@ -233,7 +225,7 @@ any additional modifications to the body of `writeImpl()` function. It becomes
 a responsibility of the compiler to invoke `write()` member function of all the
 fields.
 
-## Eliminating Code Duplication
+## Eliminating Boilerplate Code
 
 It is easy to notice that the body of `readImpl()` and `writeImpl()` of every
 `ActualMessage*` class looks the same. What differs is the tuple of fields which
@@ -241,7 +233,9 @@ get iterated over.
 
 It is possible to eliminate such duplication of boilerplate code by introducing
 additional class in the class hierarchy, which receives a bundle of fields as
-a template parameter and implements the required functions:
+a template parameter and implements the required functions. The same
+technique was used to eliminate boilerplate code for 
+[message dispatching](../message/dispatch_handle.md).
 ```cpp
 // Common interface class:
 class Message {...};
@@ -252,8 +246,7 @@ class MessageBase : public Message
 public:
     using Message::ReadIterator;
     using Message::WriteIterator;
-        
-    typedef TFields AllFields;
+    using AllFields = TFields;
     
     // Access to fields bundle
     AllFields& fields() { return m_fields; }
@@ -343,10 +336,10 @@ private:
 ```
 **NOTE**, that example above used `tupleAccumulate()` function, which is 
 similar to [std::accumulate](http://en.cppreference.com/w/cpp/algorithm/accumulate).
-The main difference is that binary operation function object provided to the
+The main difference is that binary operation function object, provided to the
 function, must be able to receive any type, just like with `tupleForEach()` 
 described earlier. The code of `tupleAccumulate()` function can be found in
-[Appendix B](../appendix/b.md)
+[Appendix B](../appendix/b.md).
 
 Another example is an automation of validity check. In most cases the message
 is considered to be valid if **all** the fields are valid. Let's assume that
@@ -357,7 +350,6 @@ class SomeField
 public:
     // Get validity information
     bool valid() const;
-
     ...
 }
 ```
@@ -458,8 +450,8 @@ private:
 ```
 The provided `readFieldsFromUntil()` and `writeFieldsFromUntil()` protected member
 functions use `tupleForEachFromUntil()` function to perform read/write operations
-on a group selected fields. It is similar to `tupleForEach()` used earlier, but
-receives additional template parameters that specify indices of the fields for
+on a group of selected fields. It is similar to `tupleForEach()` used earlier, but
+receives additional template parameters, that specify indices of the fields for
 which the provided functor object needs to be invoked. The code of 
 `tupleForEachFromUntil()` function can be found in [Appendix C](../appendix/c.md).
 

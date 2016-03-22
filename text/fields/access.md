@@ -10,25 +10,24 @@ class SomeField
 {
 public:
     // Value storage type definition
-    typedef ... ValueType;
+    using ValueType = ...;
     
     // Provide an access to the stored value
     ValueType& value() { return m_value; }
     const ValueType& value() const { return m_value; }
-
     ...
 private:
     ValueType m_value;
 }
 ```
 
-Let's assume the `ActualMessage1` defines 3 integer value fields with 1, 2, and
-4 serialisation lengths respectively.
+Let's assume the `ActualMessage1` defines 3 integer value fields with 
+serialisation lengths of 1, 2, and 4 bytes respectively.
 ```cpp
 using ActualMessage1Fields = std::tuple<
-    IntValue<std::int8_t>,
-    IntValue<std::int16_t>
-    IntValue<std::int32_t>
+    IntValueField<std::int8_t>,
+    IntValueField<std::int16_t>
+    IntValueField<std::int32_t>
 >;
 class ActualMessage1 : public MessageBase<ActualMessage1Fields> {...};
 ```
@@ -61,7 +60,7 @@ public:
 };
 ```
 
-When preparing message to send the similar code sequence may be applied to
+When preparing message to send, the similar code sequence may be applied to
 update the values:
 ```cpp
 ActualMessage1 msg;

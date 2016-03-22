@@ -200,4 +200,5 @@ protocol implementation is required, and every team achieves their own goal.
 Everyone is happy!!!
 
 The extended class hierarchy becomes:
+
 ![Image: Extended class hierarchy](../image/message_ext_interface_hierarchy.png)
