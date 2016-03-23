@@ -13,7 +13,7 @@ public:
     template <typename TTuple, typename TFunc>
     static void exec(TTuple&& tuple, TFunc&& func)
     {
-        typedef typename std::decay<TTuple>::type Tuple;
+        using Tuple = typename std::decay<TTuple>::type;
         static const std::size_t TupleSize = std::tuple_size<Tuple>::value;
         static const std::size_t OffsetedRem = TRem + TOff;
         static_assert(OffsetedRem <= TupleSize, "Incorrect parameters");
@@ -45,7 +45,7 @@ public:
 template <std::size_t TFromIdx, std::size_t TUntilIdx, typename TTuple, typename TFunc>
 void tupleForEachFromUntil(TTuple&& tuple, TFunc&& func)
 {
-    typedef typename std::decay<TTuple>::type Tuple;
+    using Tuple = typename std::decay<TTuple>::type;
     static const std::size_t TupleSize = std::tuple_size<Tuple>::value;
     static_assert(TFromIdx < TupleSize,
         "The from index is too big.");

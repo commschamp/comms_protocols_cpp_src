@@ -12,12 +12,12 @@ public:
     template <typename TTuple, typename TFunc>
     static void exec(TFunc&& func)
     {
-        typedef typename std::decay<TTuple>::type Tuple;
+        using Tuple = typename std::decay<TTuple>::type;
         static const std::size_t TupleSize = std::tuple_size<Tuple>::value;
         static_assert(TRem <= TupleSize, "Incorrect TRem");
 
         static const std::size_t Idx = TupleSize - TRem;
-        typedef typename std::tuple_element<Idx, Tuple>::type ElemType;
+        using ElemType = typename std::tuple_element<Idx, Tuple>::type;
         func.template operator()<ElemType>();
         TupleForEachTypeHelper<TRem - 1>::template exec<TTuple>(
             std::forward<TFunc>(func));
@@ -40,7 +40,7 @@ public:
 template <typename TTuple, typename TFunc>
 void tupleForEachType(TFunc&& func)
 {
-    typedef typename std::decay<TTuple>::type Tuple;
+    using Tuple = typename std::decay<TTuple>::type;
     static const std::size_t TupleSize = std::tuple_size<Tuple>::value;
 
     details::TupleForEachTypeHelper<TupleSize>::template exec<Tuple>(

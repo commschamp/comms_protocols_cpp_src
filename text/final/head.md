@@ -5,8 +5,9 @@ let's summarise what has been achieved.
 
 - The communication protocol implementation becomes easy and straightforward
 process, using mostly declarative statements of classes and types definitions
-without unnecessary boilerplate code.
-- The default logic provided by the library can easily be extended and/or
+without unnecessary boilerplate code. The C++ compiler does all the dirty and
+boring work of generating the required code.
+- The default logic, provided by the library, can easily be extended and/or
 overridden using class inheritance and virtual functions.
 - The protocol implementation doesn't enforce any restrictions on data structures
 being used, and as a result it can be reused in any system, including bare-metal

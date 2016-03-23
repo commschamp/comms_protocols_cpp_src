@@ -13,7 +13,7 @@ public:
     template <typename TTuple, typename TValue, typename TFunc>
     static constexpr TValue exec(TTuple&& tuple, const TValue& value, TFunc&& func)
     {
-        typedef typename std::decay<TTuple>::type Tuple;
+        using Tuple = typename std::decay<TTuple>::type;
         static_assert(TRem <= std::tuple_size<Tuple>::value, "Incorrect TRem");
 
         return TupleAccumulateHelper<TRem - 1>::exec(
@@ -40,7 +40,7 @@ public:
 template <typename TTuple, typename TValue, typename TFunc>
 constexpr TValue tupleAccumulate(TTuple&& tuple, const TValue& value, TFunc&& func)
 {
-    typedef typename std::decay<TTuple>::type Tuple;
+    using Tuple = typename std::decay<TTuple>::type;
 
     return details::TupleAccumulateHelper<std::tuple_size<Tuple>::value>::exec(
                 std::forward<TTuple>(tuple),

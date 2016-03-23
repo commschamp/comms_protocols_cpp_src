@@ -12,7 +12,7 @@ public:
     template <typename TTuple, typename TFunc>
     static void exec(TTuple&& tuple, TFunc&& func)
     {
-        typedef typename std::decay<TTuple>::type Tuple;
+        using Tuple = typename std::decay<TTuple>::type;
         static const std::size_t TupleSize = std::tuple_size<Tuple>::value;
         static_assert(TRem <= TupleSize, "Incorrect parameters");
 
@@ -44,7 +44,7 @@ public:
 template <typename TTuple, typename TFunc>
 void tupleForEach(TTuple&& tuple, TFunc&& func)
 {
-    typedef typename std::decay<TTuple>::type Tuple;
+    using Tuple = typename std::decay<TTuple>::type;
     static const std::size_t TupleSize = std::tuple_size<Tuple>::value;
 
     details::TupleForEachHelper<TupleSize>::exec(
