@@ -21,22 +21,22 @@ class MsgIdLayer
 {
 public:
     // Type of the field object used to read/write message ID value.
-    typedef TField Field;
+    using Field = TField;
     
     // Take type of the ReadIterator from the next layer
-    typedef typename TNext::ReadIterator ReadIterator;
+    using ReadIterator = typename TNext::ReadIterator;
 
     // Take type of the WriteIterator from the next layer
-    typedef typename TNext::WriteIterator WriteIterator;
+    using WriteIterator = typename TNext::WriteIterator;
 
     // Take type of the message interface from the next layer
-    typedef typename TNext::Message Message;
+    using Message = typename TNext::Message;
     
     // Type of the message ID
-    typedef typename Message::MsgIdType MsgIdType;
+    using MsgIdType = typename Message::MsgIdType;
     
     // Redefine pointer to message type (described later)
-    typedef ... MsgPtr; 
+    using MsgPtr = ...; 
     
     ErrorStatus read(MsgPtr& msgPtr, ReadIterator& iter, std::size_t len)
     {
@@ -45,18 +45,15 @@ public:
         if (es != ErrorStatus::Success) {
             return es;
         }
-        
-        msgPtr = createMsg(field.value());
+        msgPtr = createMsg(field.value()); // create message object based on ID
         if (!msgPtr) {
             // Unknown ID
             return ErrorStatus::InvalidMsgId;
         } 
-        
         es = m_next.read(iter, len - field.length());
         if (es != ErrorStatus::Success) {
             msgPtr.reset(); // Discard allocated message;
         } 
-        
         return es;
     }
     
@@ -68,7 +65,6 @@ public:
         if (es != ErrorStatus::Success) {
             return es;
         }
-        
         return m_next.write(msg, iter, len - field.length());
     }
 private:
@@ -85,15 +81,16 @@ To properly finalise the implementation above we need to resolve two main challe
 - Implement `createMsg()` function which receives ID of the message and 
 creates the message object.
 - Define the `MsgPtr` smart pointer type, which is responsible to hold the
-allocated message object. The easiest way is to define it to be 
-`std::unique_ptr<Message>`. The main problem with it is usage of dynamic memory
+allocated message object. In most cases defining it to be
+`std::unique_ptr<Message>` will do the job. However, the main problem here is usage of dynamic memory
 allocation. Bare metal platform may not have such luxury. There must be a 
-way to support "in place" allocation instead of usage of dynamic memory.
+way to support 
+["in place" allocation](https://en.wikipedia.org/wiki/Placement_syntax) as well.
 
 ## Creating Message Object
 
-Let's start with creation of proper message object given the **numeric** message ID. 
-Its must be as efficient as possible.
+Let's start with creation of proper message object, given the **numeric** message ID. 
+It must be as efficient as possible.
 
 In many cases the IDs of the messages are sequential ones and defined using 
 some enumeration type.
@@ -108,7 +105,7 @@ enum MsgId
 ```
 
 Let's assume that we have `FactoryMethod` class with polymorphic `createMsg()`
-function that returns allocated message object wrapped in a `MsgPtr` smart pointer.
+function, that returns allocated message object wrapped in a `MsgPtr` smart pointer.
 ```cpp
 class FactoryMethod
 {
@@ -167,7 +164,7 @@ enum MsgId
 ```
 In this case the array of `FactoryMethod`s described earlier must be packed and
 [binary search](https://en.wikipedia.org/wiki/Binary_search_algorithm) algorithm
-used to find required method. To support the search the `FactoryMethod` must
+used to find required method. To support such search, the `FactoryMethod` must
 be able to report ID of the messages it creates.
 ```cpp
 class FactoryMethod
@@ -206,14 +203,13 @@ private:
                 registry.begin(), registry.end(), id, 
                 [](FactoryMethod* method, MsgIdType idVal) -> bool 
                 {
-                    return method->id() < id;
+                    return method->id() < idVal;
                 });
                 
         if ((iter == registry.end()) ||
             ((*iter)->id() != id)) {
             return MsgPtr();
         }
-                
         return (*iter)->createMsg();
     }
 };
@@ -259,15 +255,16 @@ private:
 ```
 
 Please note, that `MsgIdLayer::read()` function also needs to be modified to
-support multiple attempts to create message object with the same id, by just
-incrementing the `idx` parameter, passed to `createMsg()` member function, when
-read operation fails before reporting error to the caller. I will leave it as
-an exercise to the reader.
+support multiple attempts to create message object with the same id.
+It must increment the `idx` parameter, passed to `createMsg()` member function, 
+on every failing attempt to read the message contents, and try again 
+until the found equal range is exhausted. I leave the implementation of
+this extra logic as an exercise to the reader.
 
 To complete the message allocation subject we need to come up with an automatic
 way to create the registry of `FactoryMethod`s used earlier. Please remember,
 that `FactoryMethod` was just a polymorphic interface. We need to implement
-actual method that implement the virtual functionality.
+actual method that implements the virtual functionality.
 ```cpp
 template <typename TActualMessage>
 class ActualFactoryMethod : public FactoryMethod
@@ -290,12 +287,12 @@ option (described in
 was used to specify numeric message ID
 when defining the `ActualMessage*` class.
 
-Also note that the example above uses dynamic memory allocation to allocate
+Also note, that the example above uses dynamic memory allocation to allocate
 actual message object. This is just for idea demonstration purposes. The
 [Allocating Message Object](#allocating-message-object) section below will
 describe how to support "in-place" allocation.
 
-The types of the messages that can be received over I/O link are usually known
+The types of the messages, that can be received over I/O link, are usually known
 at compile time. If we bundle them together in `std::tuple`, it is easy to
 apply already familiar meta-programming technique of iterating over the provided
 types and instantiate proper `ActualFactoryMethod<>` object.
@@ -356,7 +353,7 @@ void initRegistry()
 }
 ```
 
-NOTE, that `ActualFactoryMethod<>` factories do not have any internal state and 
+**NOTE**, that `ActualFactoryMethod<>` factories do not have any internal state and 
 are defined as static objects. It is safe just to store pointers to them in
 the *registry* array.
 
@@ -373,22 +370,22 @@ class MsgIdLayer
 {
 public:
     // Type of the field object used to read/write message ID value.
-    typedef TField Field;
+    using Field = TField;
     
     // Take type of the ReadIterator from the next layer
-    typedef typename TNext::ReadIterator ReadIterator;
+    using ReadIterator = typename TNext::ReadIterator;
 
     // Take type of the WriteIterator from the next layer
-    typedef typename TNext::WriteIterator WriteIterator;
+    using WriteIterator = typename TNext::WriteIterator;
 
     // Take type of the message interface from the next layer
-    typedef typename TNext::Message Message;
+    using Message = typename TNext::Message;
     
     // Type of the message ID
-    typedef typename Message::MsgIdType MsgIdType;
+    using MsgIdType = typename Message::MsgIdType;
     
     // Redefine pointer to message type:
-    typedef ... MsgPtr;
+    using MsgPtr = ...;
     
     // Constructor
     MsgIdLayer()
@@ -412,7 +409,7 @@ private:
 
     // Registry of Factories
     static const auto RegistrySize = std::tuple_size<TAllMessages>::value;
-    typedef std::array<FactoryMethod*, RegistrySize> Registry;
+    using Registry = std::array<FactoryMethod*, RegistrySize>;
 
 
     // Create message
@@ -463,7 +460,7 @@ struct TupleAsAlignedUnion;
 template <typename... TTypes>
 struct TupleAsAlignedUnion<std::tuple<TTypes...> >
 {
-    typedef typename std::aligned_union<0, TTypes...>::type Type;
+    using Type = typename std::aligned_union<0, TTypes...>::type;
 };
 
 ```
@@ -477,7 +474,7 @@ functionality using `std::aligned_storage`.
 The "in place" allocation area, that can fit in any message type listed in 
 `AllMessages` tuple, can be defined as:
 ```cpp
-typedef typename TupleAsAlignedUnion<AllMessages>::Type InPlaceStorage;
+using InPlaceStorage = typename TupleAsAlignedUnion<AllMessages>::Type;
 ```
 
 The "in place" allocation is simple:
@@ -500,13 +497,13 @@ struct InPlaceDeleter
 The smart pointer to `Message` interface class may be defined as 
 `std::unique_ptr<Message, InPlaceDeleter<Message> >`.
 
-Now let's define two independent allocation policies with the similar interface.
+Now, let's define two independent allocation policies with the similar interface.
 One for dynamic memory allocation, and the other for "in place" allocation.
 ```cpp
 template <typename TMessageInterface>
 struct DynMemAllocationPolicy
 {
-    typedef std::unique_ptr<TMessageInterface> MsgPtr;
+    using MsgPtr = std::unique_ptr<TMessageInterface>;
     
     template <typename TMessage>
     MsgPtr allocMsg()
@@ -522,7 +519,7 @@ public:
     template <typename T>
     struct InPlaceDeleter {...};
 
-    typedef std::unique_ptr<TMessageInterface, InPlaceDeleter<TMessageInterface> > MsgPtr;
+    using MsgPtr = std::unique_ptr<TMessageInterface, InPlaceDeleter<TMessageInterface> >;
     
     template <typename TMessage>
     MsgPtr allocMsg()
@@ -534,15 +531,14 @@ public:
     }
     
 private:
-
-    typedef typename TupleAsAlignedUnion<TAllMessages>::Type InPlaceStorage;
+    using InPlaceStorage = typename TupleAsAlignedUnion<TAllMessages>::Type;
     InPlaceStorage m_storage;
 }
 ```
 Please pay attention, that the implementation of `InPlaceAllocationPolicy` is 
-the simplest one. In production quality code, it is recommended to insert 
+the simplest possible one. In production quality code, it is recommended to insert 
 protection against double allocation
-in the used storage area by introducing boolean flag indicating that the
+in the used storage area, by introducing boolean flag indicating, that the
 storage area is or isn't free. The pointer/reference to such flag must also be
 passed to the deleter object, which is responsible to update it when deletion takes
 place.
@@ -577,9 +573,9 @@ struct InPlaceAllocation {};
 } // namespace comms
 ```
 
-Using the familiar technique of options parsing we can create a structure
+Using the familiar technique of options parsing, we can create a structure,
 where a boolean value `HasInPlaceAllocation` defaults to `false` and can be
-set to `true` if the option mentioned above is used. As the result the policy choice
+set to `true`, if the option mentioned above is used. As the result, the policy choice
 may be implemented as:
 ```cpp
 namespace comms
@@ -593,21 +589,20 @@ class MsgIdLayer
 {
 public:
     // TOptions parsed into struct
-    typedef ... ParsedOptions; 
+    using ParsedOptions = ...; 
     
     // Take type of the message interface from the next layer
-    typedef typename TNext::Message Message;
+    using Message = typename TNext::Message;
     
     // Choice of the allocation policy
-    typedef typename std::conditional<
+    using AllocPolicy = typename std::conditional<
         ParsedOptions::HasInPlaceAllocation,
         InPlaceAllocationPolicy<Message, TAllMessages>,
         DynMemAllocationPolicy<Message>
-    >::type AllocPolicy;
+    >::type;
     
     // Redefine pointer to message type
-    typedef typename AllocPolicy::MsgPtr MsgPtr;
-    
+    using MsgPtr = typename AllocPolicy::MsgPtr;
     ...
 private:
     AllocPolicy m_policy;
@@ -631,11 +626,10 @@ class MsgIdLayer
 {
 public:
     // Choice of the allocation policy
-    typedef ... AllocPolicy;
+    using AllocPolicy = ...;
     
     // Redefine pointer to message type
-    typedef typename AllocPolicy::MsgPtr MsgPtr;
-    
+    using MsgPtr = typename AllocPolicy::MsgPtr;
     ...
 private:
     class FactoryMethod

@@ -21,18 +21,18 @@ SYNC | SIZE | ID | PAYLOAD | CHECKSUM
 ```
 
 The number of most common types of the wrapping "chunks" is quite small. 
-However, different protocols may have different way of how these values are 
+However, different protocols may have different rules of how these values are 
 serialised. Very similar to [Fields](../fields/head.md).  
 
-The main logic of processing the incoming raw data ramains the same for 
-all the protocols, though. It is to read and process the "chunks" one
+The main logic of processing the incoming raw data remains the same for 
+all the protocols, though. It is to read and process the transport information "chunks" one
 by one:
 - SYNC - check the next one or more bytes for an expected predefined value.
-If the value is as expected proceed to the next "chunk". If not, strip one
-byte from the from of incoming data queue and try again.
-- SIZE - check the remaining expected data length vs actually available. If 
+If the value is as expected proceed to the next "chunk". If not, drop one
+byte from the front of the incoming data queue and try again.
+- SIZE - compare the remaining expected data length against actually available. If 
 there is enough data, proceed to the next "chunk". If not report, to the 
-caller that more data is required.
+caller, that more data is required.
 - ID - read the message ID value and create appropriate message object, then
 proceed to the next "chunk".
 - PAYLOAD - let the created message object to read its payload data.
@@ -48,24 +48,24 @@ So, how is it going to be implemented? My advice is to use independent "chunk"
 classes, that expose predefined interface, wrap one another, and forward
 the requested operation to the next "chunk" when appropriate. As was stated
 earlier, the transport information values are very similar to 
-[Fields](../fields/head.md), which imediatelly takes us to the derection of
-reusing [Fields](../fields/head.md) classes to handle these values:
+[Fields](../fields/head.md), which immediately takes us to the direction of
+reusing [Field](../fields/head.md) classes to handle these values:
 ```cpp
 template <typename TField, typename TNextChunk, ... /* some other template parameters */>
 class SomeChunk
 {
 public:
     // Iterator used for reading
-    typedef typename TNextChunk::ReadIterator ReadIterator;
+    using ReadIterator = typename TNextChunk::ReadIterator;
     
     // Iterator used for writing
-    typedef typename TNextChunk::WriteIterator WriteIterator;
+    using WriteIterator = typename TNextChunk::WriteIterator;
     
     // Type of the common message interface class
-    typedef typename TNextChunk::Message Message;
+    using Message = typename TNextChunk::Message;
     
     // Smart pointer used to hold newly created message object
-    typedef typename TNextChunk::MsgPtr MsgPtr;
+    using MsgPtr = typename TNextChunk::MsgPtr;
     
     ErrorStatus read(MsgPtr& msg, ReadIterator& iter, std::size_t len) 
     {
@@ -98,7 +98,7 @@ Please note that `ReadIterator` and `WriteIterator` are taken from the next
 chunk. One of the chunks, which is responsible for processing the `PAYLOAD` will
 receive the class of the message interface as a template parameter, will
 retrieve the information of the iterators' types, and redefine them as its
-internal types. Also this class will define the type of the message interface as
+internal types. Also, this class will define the type of the message interface as
 its internal `Message` type. 
 All other wrapping chunk classes will reuse the same information.
 
@@ -107,7 +107,7 @@ message object (`MsgPtr`). Usually it is the chunk that is responsible to proces
 value. 
 
 The sequential processing the the transport information "chunks", and stripping
-them one by one before proceeding to the next one may remind of 
+them one by one before proceeding to the next one, may remind of 
 [OSI Conceptual Model](https://en.wikipedia.org/wiki/OSI_model), where
 a layer serves the layer above it and is served by the layer below it. 
 

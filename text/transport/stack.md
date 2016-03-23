@@ -10,7 +10,7 @@ where:
 - All the fields are serialised using BIG endian.
 - SYNC - 2 bytes of synchronisation value to indicate beginning of the message, 
 must be "0xab 0xcd"
-- SIZE - 2 bytes, length of remaining data **including checksum** and not 
+- SIZE - 2 bytes, length of remaining data, **including checksum** and not 
 including SIZE field itself.
 - ID - 1 byte, numeric ID of the message.
 - PAYLOAD - any number of bytes, serialised message data
@@ -42,7 +42,8 @@ enum MyMsgId : std::uint16_t
 // Forward declaration of MyHandler handling class
 class MyHandler;
 
-// Message interface
+// Message interface 
+// NOTE: write operation will write data into a vector using push_back() calls
 using MyMessage = 
     comms::Message<
         comms::option::MsgIdType<MyMsgId>
@@ -103,9 +104,10 @@ using MySizeField =
 using MySizeLayer = comms::MsgSizeLayer<MySizeField, MyIdLayer>;
 ```
 Please note, that `SIZE` field definition uses `comms::option::NumValueSerOffset`
-option, which effectively adds `2` when size value is serialised and 
+option, which effectively adds `2` when size value is serialised, and 
 subtracts it when remaining length is deserialised. It must be done, because
-`SIZE` value specifies number of remaining bytes including the `CHECKSUM` value at the end.
+`SIZE` value specifies **number of remaining bytes**, including the `CHECKSUM` 
+value at the end.
 
 ## CHECKSUM Layer
 
@@ -133,7 +135,7 @@ using MySyncPrefix = comms::SyncPrefixLayer<SyncField, MyChecksumLayer>;
 
 The outermost layer defines a full protocol stack. It should be typedef-ed to avoid any confusion: 
 ```cpp
-using MyProtocolStack MySyncPrefix;
+using MyProtocolStack = MySyncPrefix;
 ```
 
 The processing loop may look like this:
@@ -173,7 +175,7 @@ void processData()
 }
 ```
 The processing loop above is not the most efficient one, but it demonstrates 
-what needs to be done and how our generic library can be used in order to identify 
+what needs to be done and how our generic library can be used to identify 
 and process the received message.
 
 ## Writing Message
@@ -188,12 +190,15 @@ void sendMessage(const MyMessage& msg)
     outData.reserve(protStack.length(msg)); 
     auto writeIter = std::back_inserter(outData);
     auto es = protStack.write(msg, writeIter, outData.max_size());
-    if (es = comms::ErrorStatus::UpdateRequired) {
+    if (es == comms::ErrorStatus::UpdateRequired) {
         auto updateIter = &outData[0];
         es = protStack.update(updateIter, outData.size());
     }
-    assert(es == comms::ErrorStatus::Success); // No error is expected
     
+    if (es != comms::ErrorStatus::Success) {
+        ... // report error
+        return;
+    }
     ... // Send written data over I/O link
 }
 ```

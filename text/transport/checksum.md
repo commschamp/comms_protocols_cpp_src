@@ -7,7 +7,7 @@ then invokes the read operation of the next (wrapped) layer. After the
 next layer reports successful completion of its read operation, the expected checksum 
 value is read. Then, the real checksum on the read data bytes is calculated and
 compered to the expected one. If the values match, the read operation is
-reported as successfully complete. If not the created message object is
+reported as successfully complete. If not, the created message object is
 deleted and error reported.
 - During write operation it lets the next (wrapped) layer to finish its
 writing, calculates the checksum value on the written
@@ -44,19 +44,19 @@ class ChecksumLayer
 {
 public:
     // Type of the field object used to read/write SYNC prefix.
-    typedef TField Field;
+    using Field = TField;
     
     // Take type of the ReadIterator from the next layer
-    typedef typename TNext::ReadIterator ReadIterator;
+    using ReadIterator = typename TNext::ReadIterator;
 
     // Take type of the WriteIterator from the next layer
-    typedef typename TNext::WriteIterator WriteIterator;
+    using WriteIterator = typename TNext::WriteIterator;
 
     // Take type of the message interface from the next layer
-    typedef typename TNext::Message Message;
+    using Message = typename TNext::Message;
     
     // Take type of the message interface pointer from the next layer
-    typedef typename TNext::MsgPtr MsgPtr; 
+    using MsgPtr = typename TNext::MsgPtr; 
     
     template <typename TMsgPtr>
     ErrorStatus read(TMsgPtr& msgPtr, ReadIterator& iter, std::size_t len)
@@ -81,7 +81,7 @@ public:
         auto expectedValue = field.value();
         if (expectedValue != checksum) {
             msgPtr.reset(); // Delete allocated message
-            return ErrorStatus::ChecksumError;
+            return ErrorStatus::ProtocolError;
         }
         return ErrorStatus::Success;
     } 
@@ -106,9 +106,9 @@ public:
     template <typename TIter>
     TResult operator()(TIter& iter, std::size_t len) const
     {
-        typedef typename std::make_unsigned<
+        using ByteType = typename std::make_unsigned<
             typename std::decay<decltype(*iter)>::type
-        >::type ByteType;
+        >::type;
 
         auto checksum = TResult(0);
         for (auto idx = 0U; idx < len; ++idx) {
@@ -129,8 +129,8 @@ If the iterator is properly defined, the
 [std::iterator_traits](http://en.cppreference.com/w/cpp/iterator/iterator_traits) 
 class will define `iterator_category` internal type.
 ```cpp
-typedef typename 
-    std::iterator_traits<WriteIterator>::iterator_category WriteIteratorCategoryTag;
+using WriteIteratorCategoryTag = 
+    typename std::iterator_traits<WriteIterator>::iterator_category;
 ```
 For random access iterators the `WriteIteratorCategoryTag` class will be
 either [std::random_access_iterator_tag](http://en.cppreference.com/w/cpp/iterator/iterator_tags) 
@@ -144,8 +144,8 @@ template <...>
 class ChecksumLayer
 {
 public:
-    typedef typename 
-        std::iterator_traits<WriteIterator>::iterator_category WriteIteratorCategoryTag;
+    using WriteIteratorCategoryTag =
+        typename std::iterator_traits<WriteIterator>::iterator_category;
 
     ErrorStatus write(const Message& msg, WriteIterator& iter, std::size_t len) const
     {
@@ -286,8 +286,11 @@ private:
 
 And so on for the rest of the layers. Also note, that the code above will
 work, only when the field has the **same serialisation length for any value**.
-If this is not the case, the previously written value needs to be read instead of
-just advancing the iterator:
+If this is not the case 
+([Base-128](https://en.wikipedia.org/wiki/Variable-length_quantity) encoding
+is used), the previously written value needs to be read, instead of
+just advancing the iterator, to make sure the iterator is advanced
+right amount of bytes:
 ```cpp
 template <typename TIter>
 ErrorStatus update(TIter& iter, std::size_t len) const
@@ -300,13 +303,30 @@ ErrorStatus update(TIter& iter, std::size_t len) const
     return m_next.update(iter, len - field.length());
 }
 ```
-The variable serialisation length encoding will be force using some kind of
+The variable serialisation length encoding will be forced using some kind of
 special option. It can be identified at compile time and 
 [Tag Dispatch Idiom](http://www.generic-programming.org/languages/cpp/techniques.php#tag_dispatching)
 can be used to select appropriate `update` functionality.
 
-The caller requesting protocol stack to serialise a message must check
-the error code of the `write()` operation. If it is `ErrorStatus::UpdateRequired`,
+The caller, that requests protocol stack to serialise a message, must check
+the error status value returned by the `write()` operation. 
+If it is `ErrorStatus::UpdateRequired`,
 the caller must create random-access iterator to the already written buffer
 and invoke `update()` function with it, to make sure the written information 
 is correct.
+```cpp
+using ProtocolStack = ...;
+ProtocolStack protStack;
+
+ErrorStatus sendMessage(const Message& msg)
+{
+    ProtocolStack::WriteIterator writeIter = ...;
+    auto es = protStack.write(msg, writeIter, bufLen);
+    if (es == ErrorStatus::UpdateRequired) {
+        auto updateIter = ...; // Random access iterator to written data
+        es = protStack.update(updateIter, ...);
+    }
+    return es;
+}
+
+```

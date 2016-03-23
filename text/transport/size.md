@@ -20,19 +20,19 @@ class MsgSizeLayer
 {
 public:
     // Type of the field object used to read/write SIZE information.
-    typedef TField Field;
+    using Field = TField;
     
     // Take type of the ReadIterator from the next layer
-    typedef typename TNext::ReadIterator ReadIterator;
+    using ReadIterator = typename TNext::ReadIterator;
 
     // Take type of the WriteIterator from the next layer
-    typedef typename TNext::WriteIterator WriteIterator;
+    using WriteIterator = typename TNext::WriteIterator;
 
     // Take type of the message interface from the next layer
-    typedef typename TNext::Message Message;
+    using Message = typename TNext::Message;
     
     // Take type of the message interface pointer from the next layer
-    typedef typename TNext::MsgPtr MsgPtr; 
+    using MsgPtr = typename TNext::MsgPtr; 
     
     template <typename TMsgPtr>
     ErrorStatus read(TMsgPtr& msgPtr, ReadIterator& iter, std::size_t len)
@@ -42,15 +42,12 @@ public:
         if (es != ErrorStatus::Success) {
             return es;
         }
-
         auto actualRemainingSize = (len - field.length());
         auto requiredRemainingSize = static_cast<std::size_t>(field.value());
-
         if (actualRemainingSize < requiredRemainingSize) {
             return ErrorStatus::NotEnoughData;
         }
-
-        es = reader.read(msgPtr, iter, requiredRemainingSize, nullptr);
+        es = reader.read(msgPtr, iter, requiredRemainingSize);
         if (es == ErrorStatus::NotEnoughData) {
             return ErrorStatus::ProtocolError;
         }
@@ -66,7 +63,7 @@ public:
             return es;
         }
         return m_next.write(msg, iter, len - field.length());
-    }   
+    }
     
 private:
     TNext m_next;
@@ -127,7 +124,7 @@ public:
 } // namespace comms
 ```
 
-And the `length()` member function of the [SIZE Layer](size.md) may be defined
+And the `length()` member function of the [SIZE Layer](size.md) itself may be defined
 as: 
 ```cpp
 namespace comms

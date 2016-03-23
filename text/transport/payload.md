@@ -1,8 +1,8 @@
 # PAYLOAD Layer
 
-Processing of the `PAYLOAD` is always the last stage in the protocol stack, when
-all the other transport data was successfully handled, message object was
-created and ready to read its field encoded in the PAYLOAD.
+Processing of the `PAYLOAD` is always the last stage in the protocol stack.
+All previous layers have successfully processed their transport data, the 
+message object was created and is ready to read its fields encoded in the PAYLOAD.
 
 Such layer must receive type of the message interface class as a template
 parameter and redefine read/write iterator types.
@@ -13,30 +13,28 @@ template <typename TMessage>
 class MsgDataLayer
 {
 public:
-
     // Define type of the message interface
-    typedef TMessage Message;
+    using Message = TMessage;
     
     // Type of the pointer to message is not defined yet, will be defined in
     // the layer that processes message ID
-    typedef void MsgPtr;
+    using MsgPtr = void;
 
     // ReadIterator is the same as Message::ReadIterator if such exists, void 
     // otherwise.
-    typedef typename std::conditional<
+    using ReadIterator = typename std::conditional<
             Message::InterfaceOptions::HasReadIterator,
             typename TMessage::ReadIterator,
             void
-        >::type ReadIterator;
+        >::type;
 
     // WriteIterator is the same as Message::WriteIterator if such exists, void 
     // otherwise.
-    typedef typename std::conditional<
+    using WriteIterator = typename std::conditional<
             Message::InterfaceOptions::HasWriteIterator,
             typename TMessage::WriteIterator,
             void
         >::type WriteIterator;
-
     ...
 };
 } // namespace comms
@@ -73,5 +71,5 @@ public:
 Please note that `read()` member function expects to receive a reference to 
 the smart pointer, which holds allocated message object, as the first parameter. 
 The type of the pointer is not known yet. 
-As the result type of such pointer is provided via
+As the result, type of such pointer is provided via
 template parameter.
