@@ -7,7 +7,7 @@ class SomeField
 {
 public:
     // Value storage type definition
-    typedef ... ValueType;
+    using ValueType = ...;
     
     // Provide an access to the stored value
     ValueType& value();
@@ -60,7 +60,7 @@ protected:
 ```
 
 The choice of the right endian may be implemented using 
-[Tag Dispatch Idiom](http://www.generic-programming.org/languages/cpp/techniques.php#tag_dispatching)
+[Tag Dispatch Idiom](http://www.generic-programming.org/languages/cpp/techniques.php#tag_dispatching).
 ```cpp
 namespace comms
 {
@@ -124,9 +124,9 @@ namespace comms
 template <typename TBase, typename TValueType>
 class IntValueField : public TBase
 {
-    typedef TBase Base;
-public:    
-    typedef TValueType ValueType;
+    using Base = TBase;
+public:
+    using ValueType = TValueType;
     ...
     template <typename TIter>
     ErrorStatus read(TIter& iter, std::size_t len)
@@ -162,7 +162,7 @@ private:
 ```
 
 When the endian is known and fixed (for example when implementing third party 
-protocol according to provided specifications) and there is little chance it's ever going
+protocol according to provided specifications), and there is little chance it's ever going
 to change, the base class for all the fields may be explicitly defined:
 ```cpp
 using MyProjField = comms::Field<false>; // Use big endian for fields serialisation
@@ -179,10 +179,10 @@ namespace comms
 template <typename... TOptions>
 class Message : public typename MessageInterfaceBuilder<TOptions...>::Type
 {
-    typedef typename MessageInterfaceBuilder<TOptions...>::Type Base;
+    using Base = typename MessageInterfaceBuilder<TOptions...>::Type;
 pablic:
-    typedef typename Base::ParsedOptions ParsedOptions;    
-    typedef comms::Field<ParsedOptions::HasLittleEndian> Field;
+    using ParsedOptions = typename Base::ParsedOptions ;
+    using Field = comms::Field<ParsedOptions::HasLittleEndian>;
     ...
 };
 } // namespace comms
@@ -214,7 +214,7 @@ The [Common Field Types](../fields/common_types.md) chapter described most
 common types of fields with various serialisation and handling nuances,
 which can be used to implement a custom communication protocol. 
 
-Let's take the basic integer value field for example. The most common way
+Let's take the basic integer value field as an example. The most common way
 to serialise it is just read/write its internally stored value as is. However,
 there may be cases when serialisation takes limited number of bytes. Let's say,
 the protocol specification states that some integer value consumes only 3 bytes
@@ -333,7 +333,7 @@ template <typename TFieldBase, typename TValueType>
 class BasicIntValue : public TFieldBase
 {
 public: 
-    typedef TValueType ValueType;
+    using ValueType = TValueType;
     
     ... // rest of the interface
 private:
@@ -379,7 +379,7 @@ with message interface and implementation chunks. The overall architecture
 presented in this book doesn't require the field classes to exhibit polymorphic
 behaviour. That's why using inheritance between adaptors is not necessary, although
 not forbidden either. Using inheritance instead of containment has its pros and
-cons and at the end it's a matter of personal taste of what to use.
+cons, and at the end it's a matter of personal taste of what to use.
 
 Now it's time to use the parsed options and wrap the `BasicIntValue` with
 required adaptors:
@@ -394,13 +394,13 @@ struct AdaptBasicFieldSerOffset;
 template <typename TField, typename TOpts>
 struct AdaptBasicFieldSerOffset<TField, TOpts, true>
 {
-    typedef SerOffsetAdaptor<TOpts::SerOffset, TField> Type;
+    using Type = SerOffsetAdaptor<TOpts::SerOffset, TField>;
 };
 
 template <typename TField, typename TOpts>
 struct AdaptBasicFieldSerOffset<TField, TOpts, false>
 {
-    typedef TField Type;
+    using Type = TField;
 };
 } // namespace comms
 ```
@@ -415,13 +415,13 @@ struct AdaptBasicFieldFixedLength;
 template <typename TField, typename TOpts>
 struct AdaptBasicFieldFixedLength<TField, TOpts, true>
 {
-    typedef FixedLengthAdaptor<TOpts::FixedLength, TField> Type;
+    using Type = FixedLengthAdaptor<TOpts::FixedLength, TField>;
 };
 
 template <typename TField, typename TOpts>
 struct AdaptBasicFieldFixedLength<TField, TOpts, false>
 {
-    typedef TField Type;
+    using Type = TField;
 };
 } // namespace comms
 ```
@@ -536,12 +536,12 @@ provided setter class:
 namespace comms
 {
 template <typename TSetter, typename TNext>
-class DefaultValueInitAdapter 
+class DefaultValueInitAdaptor 
 {
 public:
-    typedef typename TNext::ValueType ValueType;
+    using ValueType = typename TNext::ValueType;
 
-    DefaultValueInitAdapter()
+    DefaultValueInitAdaptor()
     {
         TSetter()(*this);
     }
@@ -554,13 +554,13 @@ public:
     ...
     
 private:
-    TNext m_next;    
+    TNext m_next;
 }; 
 } // namespace comms
 ```
 
 Please note, that both `comms::option::DefaultValueInitialiser` option and 
-`DefaultValueInitAdapter` adaptor class are completely generic, and
+`DefaultValueInitAdaptor` adaptor class are completely generic, and
 they can be used with any type of the field.
 
 For numeric fields, such as `IntValueField` defined earlier, the generic library
@@ -574,8 +574,8 @@ struct DefaultNumValueInitialiser
     template <typename TField>
     void operator()(TField& field)
     {
-        typedef typename std::decay<TField>::type FieldType;
-        typedef typename FieldType::ValueType ValueType;
+        using FieldType = typename std::decay<TField>::type;
+        using ValueType = typename FieldType::ValueType;
         field.value() = static_cast<ValueType>(TVal);
     }
 };

@@ -6,12 +6,12 @@ Such implementation eliminated common boilerplate code used in every `ActualMess
 class.
 
 This chapter is going to generalise the implementation of `MessageBase` into
-the generic `comms::MessageBase` class which is communication protocol independent
+the generic `comms::MessageBase` class, which is communication protocol independent
 and can be re-used in any other development.
 
 The generic `comms::MessageBase` class must be able to:
 
-- provide information on ID of the message, i.e. implement the `idImpl()` 
+- provide the ID of the message, i.e. implement the `idImpl()` 
 virtual member function, when such ID is known at compile time.
 - provide common dispatch functionality, i.e. implement `dispatchImpl()`
 virtual member function, described in 
@@ -100,7 +100,7 @@ struct MessageImplParsedOptions<option::DispatchImpl<TActual>, TOptions...> :
         public MessageImplParsedOptions<TOptions...>
 {
     static const bool HasDispatchImpl = true;
-    typedef TActual ActualMessage;
+    using ActualMessage = TActual;
 };
 
 template <typename TFields, typename... TOptions>
@@ -108,7 +108,7 @@ struct MessageImplParsedOptions<option::FieldsImpl<TFields>, TOptions...> :
         public MessageImplParsedOptions<TOptions...>
 {
     static const bool HasFieldsImpl = true;
-    typedef TFields Fields;
+    using Fields = TFields;
 };
 } // namespace comms
 ```
@@ -127,7 +127,7 @@ class MessageImplStaticNumIdBase : public TBase
 {
 public:
     // Reuse the message ID type defined in the interface
-    typedef typename Base::MsgIdType MsgIdType;
+    using MsgIdType = typename Base::MsgIdType;
     
 protected:
     virtual MsgIdType getIdImpl() const override
@@ -142,7 +142,7 @@ class MessageImplDispatchBase : public TBase
 {
 public:
     // Reuse the Handler type defined in the interface class
-    typedef typename Base::Handler Handler;
+    using Handler = typename Base::Handler;
     
 protected:
     virtual void dispatchImpl(Handler& handler) const override
@@ -155,7 +155,7 @@ protected:
 
 **NOTE**, that single option `comms::option::FieldsImpl<>` may facilitate 
 implementation of multiple functions: `readImpl()`, `writeImpl()`, `lengthImpl()`, 
-etc... Every such function was created using separate option provided when
+etc... Every such function was declared due to using a separate option when
 defining the interface. We'll have to cherry-pick appropriate implementation
 parts, based on the interface options. As the result, these implementation
 chunks must be split into separate classes.
@@ -166,12 +166,12 @@ template <typename TBase, typename TFields>
 class MessageImplFieldsBase : public TBase
 {
 public:
-    typedef TFields AllFields;
+    using AllFields = TFields;
     
     AllFields& fields() { return m_fields; }
     const AllFields& fields() const { return m_fields; }
 private:
-    TFields m_fields;    
+    TFields m_fields;
 };
 
 template <typename TBase>
@@ -179,12 +179,12 @@ class NessageImplFieldsReadBase : public TBase
 {
 public:
     // Reuse ReadIterator definition from interface class
-    typedef typename TBase::ReadIterator ReadIterator;
+    using ReadIterator = typename TBase::ReadIterator;
 protected:
     virtual ErrorStatus readImpl(ReadIterator& iter, std::size_t len) override 
     {
         // Access fields via interface provided in previous chunk
-        auto& allFields = Base::fields(); 
+        auto& allFields = TBase::fields(); 
         ... // read all the fields
     }
 };
@@ -206,13 +206,13 @@ struct MessageImplProcessStaticNumId;
 template <typename TBase, typename ParsedImplOptions>
 struct MessageImplProcessStaticNumId<TBase, ParsedImplOptions, true>
 {
-    typedef MessageImplStaticNumIdBase<TBase, ParsedImplOptions::MsgId> Type;
+    using Type = MessageImplStaticNumIdBase<TBase, ParsedImplOptions::MsgId>;
 };
 
 template <typename TBase, typename ParsedImplOptions>
 struct MessageInterfaceProcessEndian<TBase, false>
 {
-    typedef TBase Type;
+    using Type = TBase;
 };
 } // namespace comms
 ```
@@ -227,13 +227,13 @@ struct MessageImplProcessDispatch;
 template <typename TBase, typename ParsedImplOptions>
 struct MessageImplProcessDispatch<TBase, ParsedImplOptions, true>
 {
-    typedef MessageImplDispatchBase<TBase, typename ParsedImplOptions::ActualMessage> Type;
+    using Type = MessageImplDispatchBase<TBase, typename ParsedImplOptions::ActualMessage>;
 };
 
 template <typename TBase, typename ParsedImplOptions>
 struct MessageImplProcessDispatch<TBase, false>
 {
-    typedef TBase Type;
+    using Type = TBase;
 };
 } // namespace comms
 ```
@@ -248,13 +248,13 @@ struct MessageImplProcessFields;
 template <typename TBase, typename ParsedImplOptions>
 struct MessageImplProcessFields<TBase, ParsedImplOptions, true>
 {
-    typedef MessageImplFieldsBase<TBase, typename ParsedImplOptions::Fields> Type;
+    using Type = MessageImplFieldsBase<TBase, typename ParsedImplOptions::Fields>;
 };
 
 template <typename TBase, typename ParsedImplOptions>
 struct MessageImplProcessFields<TBase, false>
 {
-    typedef TBase Type;
+    using Type = TBase;
 };
 } // namespace comms
 ```
@@ -269,13 +269,13 @@ struct MessageImplProcessReadFields;
 template <typename TBase>
 struct MessageImplProcessReadFields<TBase, true>
 {
-    typedef NessageImplFieldsReadBase<TBase> Type;
+    using Type = NessageImplFieldsReadBase<TBase>;
 };
 
 template <typename TBase>
 struct MessageImplProcessReadFields<TBase, false>
 {
-    typedef TBase Type;
+    using Type = TBase;
 };
 
 } // namespace comms
@@ -310,27 +310,33 @@ struct MessageImplBuilder
     // Parse implementation options
     using ImplOptions = MessageImplParsedOptions<TOptions...>;
     
+    // Provide idImpl() if possible
     static const bool HasStaticNumIdImpl = 
         InterfaceOptions::HasMsgIdType && ImplOptions::HasStaticNumIdImpl;
     using Base1 = typename MessageImplProcessStaticNumId<
             TBase, ImplOptions, HasStaticNumIdImpl>::Type;
             
+    // Provide dispatchImpl() if possible
     static const bool HasDispatchImpl = 
         InterfaceOptions::HasHandler && ImplOptions::HasDispatchImpl;
     using Base2 = typename MessageImplProcessDispatch<
             Base1, ImplOptions, HasDispatchImpl>::Type;
 
-
+    // Provide access to fields if possible
     using Base3 = typename MessageImplProcessFields<
             Base2, ImplOptions, ImplOptions::HasFieldsImpl>::Type;
             
+    // Provide readImpl() if possible
     static const bool HasReadImpl = 
         InterfaceOptions::HasReadIterator && ImplOptions::HasFieldsImpl;
     using Base4 = typename MessageImplProcessReadFields<
             Base3, HasReadImpl>::Type;
-            
+       
+    // And so on...
     ...
     using BaseN = ...;
+    
+    // The last BaseN must be taken as final type.
     using Type = BaseN;
 };
 } // namespace comms
@@ -363,8 +369,8 @@ implementation details.
 
 ## Summary
 
-After all this work our library contains generic `comms::Message` class that
-defines the interface and generic `comms::MessageBase` class that provides
+After all this work our library contains generic `comms::Message` class, that
+defines the interface, as well as generic `comms::MessageBase` class, that provides
 default implementation for required polymorphic functionality. 
 
 Let's define a custom communication protocol which uses little endian
@@ -380,12 +386,12 @@ enum MyMsgId
 ```
 
 Assuming we have relevant field classes in place (see [Fields](../fields/head.md)
-chapter). Let's define custom `ActualMessage1` that contains two integer 
+chapter), let's define custom `ActualMessage1` that contains two integer 
 value fields: 2 bytes unsigned value and 1 byte signed value.
 ```cpp
 using ActualMessage1Fields = std::tuple<
-    IntValue<std::uint16_t>,
-    IntValue<std::int8_t>
+    IntValueField<std::uint16_t>,
+    IntValueField<std::int8_t>
 >;
 template <typename TMessageInterface>
 class ActualMessage1 : public 
@@ -407,7 +413,7 @@ Note, that the implementation of the `ActualMessage1` is completely generic
 and doesn't depend on the actual message interface. It can be reused in any
 application with any runtime environment that uses our custom protocol.
 
-The interface class is defined according to the requirements of the application that
+The interface class is defined according to the requirements of the application, that
 uses the implementation of the defined protocol.
 ```cpp
 class MyHandler; // forward declaration of the handler class.

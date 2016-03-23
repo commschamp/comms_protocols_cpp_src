@@ -3,8 +3,8 @@
 The basic generic message interface may include the following operations:
 
 - Retrieve the message ID.
-- Read (deserialise) the message contents from raw data in a buffer
-- Write (serialise) the message contents into a buffer
+- Read (deserialise) the message contents from raw data in a buffer.
+- Write (serialise) the message contents into a buffer.
 - Calculate the serialisation length of the message.
 - Dispatch the message to an appropriate handling function.
 - Check the validity of the message contents.
@@ -26,7 +26,7 @@ Also there must be a way to specify:
 - type used to store and report the message ID.
 - type of the read/write iterators 
 - endian used in data serialisation.
-- type of the message handling class, that is used in `dispatch()` functionality.
+- type of the message handling class, which is used in `dispatch()` functionality.
 
 The best way to support such variety of requirements is to use the 
 [variadic templates](http://en.cppreference.com/w/cpp/language/parameter_pack) 
@@ -45,7 +45,7 @@ class Message
 };
 } // namespace comms
 ```
-where `TOptions` is a set of classes/structs which can be used to define all the 
+where `TOptions` is a set of classes/structs, which can be used to define all the 
 required types and functionalities.
 
 Below is an example of such possible option classes:
@@ -82,9 +82,8 @@ struct Handler{};
 } // namespace comms
 ```
 
-Our **PRIMARY OBJECTIVE** for this chapter is to use meta-programming techniques
-and to be able to define a common message interface class with multiple
-variations of public interface.
+Our **PRIMARY OBJECTIVE** for this chapter is to provide an ability to
+create a common message interface class with only requested functionality.
 
 For example, the definition of `MyMessage` interface class below
 ```cpp
@@ -102,10 +101,10 @@ should be equivalent to defining:
 class MyMessage
 {
 public:
-    typedef std::uint16_t MsgIdType;
-    typedef const std::uint8_t* ReadIterator;
-    typedef std::uint8_t* WriteIterator;
-    typedef MyHandler Handler;
+    using MsgIdType = std::uint16_t;
+    using ReadIterator = const std::uint8_t*;
+    using WriteIterator = std::uint8_t*;
+    using Handler = MyHandler;
     
     MsgIdType id() {...}
     ErrorStatus read(ReadIterator& iter, std::size_t len) {...}
@@ -118,7 +117,7 @@ protected:
 
     template <typename T>
     static void writeData(T value, WriteIterator& iter) {...}  // use big endian by default
-    ...    
+    ...
 };
 ```
 
@@ -135,8 +134,8 @@ will be equivalent to:
 class MyMessage
 {
 public:
-    typedef std::uint8_t MsgIdType;
-    typedef const std::uint8_t* ReadIterator;
+    using MsgIdType = std::uint8_t;
+    using ReadIterator = const std::uint8_t*;
     
     MsgIdType id() {...}
     ErrorStatus read(ReadIterator& iter, std::size_t len) {...}
@@ -147,7 +146,7 @@ protected:
     template <typename T>
     static void writeData(T value, WriteIterator& iter) {...}  // use little endian
 
-    ...    
+    ...
 };
 ```
 
@@ -201,10 +200,10 @@ struct MessageInterfaceParsedOptions
     static const bool HasValid = false;
     static const bool HasLength = true;
     
-    typedef std::uint16_t MsgIdType;
-    typedef const std::uint8_t* ReadIterator;
-    typedef std::uint8_t* WriteIterator;
-    typedef MyHandler Handler;
+    using MsgIdType = std::uint16_t;
+    using ReadIterator = const std::uint8_t*;
+    using WriteIterator = std::uint8_t*;
+    using Handler = MyHandler;
 }
 ```
 
@@ -241,7 +240,7 @@ struct MessageInterfaceParsedOptions<comms::option::MsgIdType<T>, TOptions...> :
                                         public MessageInterfaceParsedOptions<TOptions...>
 {
     static const bool HasMsgIdType = true;
-    typedef T MsgIdType;
+    using MsgIdType = T;
 };
 
 template <typename... TOptions>
@@ -256,13 +255,13 @@ struct MessageInterfaceParsedOptions<comms::option::ReadIterator<T>, TOptions...
                                         public MessageInterfaceParsedOptions<TOptions...>
 {
     static const bool HasReadIterator = true;
-    typedef T ReadIterator;
-};
+    using ReadIterator = T;
+}; 
 
 ... // and so on
 } // namespace comms
 ```
-Note, that inheritance relationship is used and according to the C++ language specification
+Note, that inheritance relationship is used, and according to the C++ language specification
 the new variables with the same name hide (or replace) the variables defined in 
 the base class.
 
@@ -283,7 +282,7 @@ template <typename TBase, typename TId>
 class MessageInterfaceIdTypeBase : public TBase
 {
 public:
-    typedef TId MsgIdType;
+    using MsgIdType = TId;
     MsgIdType getId() const
     {
         return getIdImpl();
@@ -322,7 +321,7 @@ template <typename TBase, typename TReadIter>
 class MessageInterfaceReadBase : public TBase
 {
 public:
-    typedef TReadIter ReadIterator;
+    using ReadIterator = TReadIter;
     ErrorStatus read(ReadIterator& iter, std::size_t size)
     {
         return readImpl(iter, size);
@@ -340,8 +339,11 @@ Note, that the interface chunks receive their base class through template
 parameters. It will allow us to connect them together using inheritance. Together
 they can create the required custom interface.
 
-There is a need for some extra helper classes to to implement such connection 
-logic which chooses only requested chunks and skips others.
+There is a need for some extra helper classes to implement such connection 
+logic which chooses only requested chunks and skips the others.
+
+The code below chooses whether to add `MessageInterfaceIdTypeBase` into
+the inheritance chain of interface chunks.
 ```cpp
 namespace comms
 {
@@ -351,13 +353,13 @@ struct MessageInterfaceProcessMsgId;
 template <typename TBase, typename TParsedOptions>
 struct MessageInterfaceProcessMsgId<TBase, TParsedOptions, true>
 {
-    typedef MessageInterfaceIdTypeBase<TBase, typename TParsedOptions::MsgIdType> Type;
+    using Type = MessageInterfaceIdTypeBase<TBase, typename TParsedOptions::MsgIdType>;
 };
 
 template <typename TBase, typename TParsedOptions>
 struct MessageInterfaceProcessMsgId<TBase, TParsedOptions, false>
 {
-    typedef TBase Type;
+    using Type = TBase;
 };
 } // namespace comms
 ```
@@ -365,23 +367,26 @@ struct MessageInterfaceProcessMsgId<TBase, TParsedOptions, false>
 Let's assume that the interface options were parsed and typedef-ed into some
 `ParsedOptions` type:
 ```cpp
-typedef comms::MessageInterfaceParsedOptions<TOptions...> ParsedOptions;
+using ParsedOptions = comms::MessageInterfaceParsedOptions<TOptions...>;
 ```
 Then after the following definition statement
 ```cpp
 using NewBaseClass = 
     comms::MessageInterfaceProcessMsgId<
-        SomeBaseClass, 
+        OldBaseClass, 
         ParsedOptions, 
         ParsedOptions::HasMsgIdType
     >::Type;
 ```
-the `NewBaseClass` is the same as `OldBaseClass` if the value of
-`ParsedOptions::HasMsgIdType` is `false`, otherwise `NewBaseClass` becomes 
-`comms::MessageInterfaceIdTypeBase` which inherits from `OldBaseClass`.
+the `NewBaseClass` is the same as `OldBaseClass`, if the value of
+`ParsedOptions::HasMsgIdType` is `false` (type of message ID wasn't provided
+via options), otherwise `NewBaseClass` becomes 
+`comms::MessageInterfaceIdTypeBase`, which inherits from `OldBaseClass`.
 
 Using the same pattern the other helper wrapping classes must be implemented
-also:
+also.
+
+Choose right chunk for endian:
 ```cpp
 namespace comms
 {
@@ -391,33 +396,38 @@ struct MessageInterfaceProcessEndian;
 template <typename TBase>
 struct MessageInterfaceProcessEndian<TBase, true>
 {
-    typedef MessageInterfaceLittleEndian<TBase> Type;
+    using Type = MessageInterfaceLittleEndian<TBase>;
 };
 
 template <typename TBase>
 struct MessageInterfaceProcessEndian<TBase, false>
 {
-    typedef MessageInterfaceBigEndian<TBase> Type;
+    using Type = MessageInterfaceBigEndian<TBase>;
 };
+} // namespace comms
+```
 
+Add read functionality if required:
+```cpp
+namespace comms
+{
 template <typename TBase, typename TParsedOptions, bool THasReadIterator>
 struct MessageInterfaceProcessReadIterator;
 
 template <typename TBase, typename TParsedOptions>
 struct MessageInterfaceProcessReadIterator<TBase, TParsedOptions, true>
 {
-    typedef MessageInterfaceReadBase<TBase, typename TParsedOptions::ReadIterator> Type;
+    using Type = MessageInterfaceReadBase<TBase, typename TParsedOptions::ReadIterator>;
 };
 
 template <typename TBase, typename TParsedOptions>
 struct MessageInterfaceProcessReadIterator<TBase, TParsedOptions, false>
 {
-    typedef TBase Type;
+    using Type = TBase;
 };
-
-... // and so on
 } // namespace comms
 ```
+And so on...
 
 The interface building code just uses the helper classes in a sequence of
 type definitions:
@@ -429,30 +439,36 @@ class EmptyBase {};
 template <typename... TOptions>
 struct MessageInterfaceBuilder
 {
+    // Parse the options
     using ParsedOptions = MessageInterfaceParsedOptions<TOptions...>;
    
+    // Add ID retrieval functionality if ID type was provided
     using Base1 = typename MessageInterfaceProcessMsgId<
             EmptyBase, ParsedOptions, ParsedOptions::HasMsgIdType>::Type; 
             
+    // Add readData() and writeData(), that use the right endian
     using Base2 = typename MessageInterfaceProcessEndian<
             Base1, ParsedOptions::HasLittleEndian>::Type;            
             
+    // Add read functionality if ReadIterator type was provided
     using Base3 = typename MessageInterfaceProcessReadIterator<
             Base2, ParsedOptions, ParsedOptions::HasReadIterator>::Type; 
 
+    // Add write functionality if WriteIterator type was provided
     using Base4 = typename MessageInterfaceProcessWriteIterator<
             Base3, ParsedOptions, ParsedOptions::HasWriteIterator>::Type; 
     
+    // And so on...
     ...
-    
     using BaseN = ...;
-    
+
+    // The last BaseN must be taken as final type.
     using Type = BaseN;
 };
 } // namespace comms
 ```
 
-Once all the required definitions are in place the common dynamic message
+Once all the required definitions are in place, the common dynamic message
 interface class `comms::Message` may be defined as:
 ```cpp
 namespace comms

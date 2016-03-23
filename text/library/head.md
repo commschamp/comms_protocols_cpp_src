@@ -1,6 +1,6 @@
 # Generic Library
 
-All the generalisation techniques described so far are applicable to most
+All the generalisation techniques, described so far, are applicable to most
 binary communication protocols. It is time to think about something generic - 
 a library that can be reused between independent projects and facilitate a
 development of any binary communication protocol.
