@@ -82,7 +82,7 @@ struct MessageImplParsedOptions<>
 }
 } // namespace comms
 ```
-and replacing the initial value of the appropriate variable with new once once
+and replacing the initial value of the appropriate variable with new ones, when
 appropriate option is discovered:
 ```cpp
 namespace comms

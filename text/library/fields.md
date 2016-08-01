@@ -587,8 +587,11 @@ field's value is initialised accordingly:
 ```cpp
 namespace comms
 {
+namespace option
+{
 template<std::intmax_t TVal>
 using DefaultNumValue = DefaultValueInitialiser<details::DefaultNumValueInitialiser<TVal> >;
+} // namespace option
 } // namespace comms
 ```
 
@@ -615,3 +618,165 @@ at the documentation of the
 was implemented using ideas from this book. It will describe all the fields
 it implements and their options.
 
+## Eliminating Dynamic Memory Allocation
+
+Fields like **String** or **List** may contain variable number of characters/elements. 
+The default internal value storage type for such fields will probably be 
+`std::string` or `std::vector` respectively. It will do the job, mostly. However,
+they may not be suitable for bare-metal products that cannot use dynamic 
+memory allocation and/or exceptions. In this case there must be a way to 
+easily substitute these types with alternatives, such as custom `StaticString` or
+`StaticVector` types.
+
+Let's define a new option that will provide fixed storage size and will force
+usage of these custom types instead of `std::string` and `std::vector`.
+```cpp
+namespace comms
+{
+namespace option
+{
+template <std::size_t TSize>
+struct FixedSizeStorage {};
+} // namespace option
+} // namespace comms
+```
+
+The parsed option structure needs to be extended with new information:
+```cpp
+namespace comms
+{
+template <typename... TOptsion>
+struct FieldParsedOptions;
+
+template <>
+struct FieldParsedOptions<>
+{
+    ...
+    static const bool HasFixedSizeStorage = false;
+}
+
+template <std::size_t TSize, typename... TOptsion>
+struct FieldParsedOptions<option::FixedSizeStorage<TSize>, TOptions...> : 
+    public FieldParsedOptions<TOptions...>
+{
+    static const bool HasFixedSizeStorage = true;
+    static const std::size_t FixedSizeStorage = TSize;
+};
+
+} // namespace comms
+```
+Now, let's implement the logic of choosing `StaticString` as the value storage
+type if the option above is used and choosing `std::string` if not.
+```cpp
+// TOptions is a final variant of FieldParsedOptions<...>
+template <typename TOptions, bool THasFixedStorage>
+struct StringStorageType;
+
+template <typename TOptions>
+struct StringStorageType<TOptions, true>
+{
+    typedef comms::util::StaticString<TOptions::FixedSizeStorage> Type;
+};
+
+template <typename TOptions>
+struct StringStorageType<TOptions, false>
+{
+    typedef std::string Type;
+};
+
+template <typename TOptions>
+using StringStorageTypeT =
+    typename StringStorageType<TOptions, TOptions::HasFixedSizeStorage>::Type;
+```
+
+`comms::util::StaticString` is the implementation of a string management class, 
+which exposes the same public interface as `std::string`. It receives the fixed size
+of the storage area as a template parameter, uses `std::array` or similar as its private
+data member the store the string characters.
+
+The implementation of the **String** field may look like this:
+```cpp
+template <typename TBase, typename... TOptions>
+class StringField
+{
+public:
+    // Parse the option into the struct
+    using ParsedOptions = FieldParsedOptions<TOptions...>;
+    
+    // Identify storage type: StaticString or std::string
+    using ValueType = StringStorageTypeT<ParsedOptions>;
+
+    // Use the basic field and wrap it with adapters just like IntValueField earlier
+    using Basic = BasicIntValue<TBase, TValueType>;
+    using Adapted = typename FieldBuilder<Basic, TOptions...>::Type;
+    
+    // Just forward all the API requests to the adapted field.
+    ValueType& value()
+    {
+        return m_adapted.value();
+    }
+    
+    const ValueType& value() const
+    {
+        return m_adapted.value();
+    }
+    
+    template <typename TIter>
+    ErrorStatus read(TIter& iter, std::size_t len)
+    {
+        return m_adapted.read(iter, len);
+    }
+    
+    ...
+private:
+    Adapted m_adapted;
+};
+} // namespace comms
+```
+
+As the result the definition of the message with a string field that doesn't 
+use dynamic memory allocation may look like this:
+
+```cpp
+template <typename TFieldBase>
+using ActualMessage3Fields = std::tuple<
+    comms::StringField<TFieldBase, comms::option::FixedStorageSize<128> >,
+    ...
+>:
+
+template <typename TMsgInterface>
+class ActualMessage3 : public 
+    comms::MessageBase<
+        comms::option::FieldsImpl<ActualMessage3Fields<typename TMsgInterface::Field> >,
+        ...
+    >
+{
+};
+```
+
+Thanks to the fact that `StaticString` and `std::string` classes expose the
+same public interface, the message handling function doesn't need to worry about
+actual storage type. It just uses public interface of `std::string`:
+```cpp
+class MsgHandler 
+{
+public:
+    void handle(ActualMessage3& msg)
+    {
+        auto& fields = msg.fields();
+        auto& stringField = std::get<0>(fields);
+        
+        // The type of the stringVal is either std::string or StaticString
+        auto& stringVal = stringField.value();
+        if (stringVal == "string1") {
+            ... // do something
+        }
+        else if (stringVal == "string2") {
+            ... // do something else
+        }
+    }
+};
+```
+
+Choosing internal value storage type for **List** fields to be 
+`std::vector` or `StaticVector` is very similar.

@@ -89,7 +89,7 @@ For example, the definition of `MyMessage` interface class below
 ```cpp
 class MyHandler;
 using MyMessage = comms::Message<
-    comms::option::MsgIdType<std::uint16_t>, // use std::uint16_t
+    comms::option::MsgIdType<std::uint16_t>, // use std::uint16_t as message ID type
     comms::option::ReadIterator<const std::uint8_t*>, // use const std::uint8_t* as iterator for reading
     comms::option::WriteIterator<std::uint8_t*>, // use std::uint8_t* as iterator for writing
     comms::option::LengthInfoInterface, // add length() member function to interface
@@ -124,7 +124,7 @@ protected:
 And the following definition of `MyMessage` interface class
 ```cpp
 using MyMessage = comms::Message<
-    comms::option::MsgIdType<std::uint8_t>, // use std::uint8_t
+    comms::option::MsgIdType<std::uint8_t>, // use std::uint8_t as message ID type
     comms::option::LittleEndian, // use little endian in serialisation
     comms::option::ReadIterator<const std::uint8_t*> // use const std::uint8_t* as iterator for reading
 >;
