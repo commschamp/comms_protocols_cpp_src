@@ -242,7 +242,7 @@ of the serialisation/deserialisation functionality with multiple levels of
 abstraction which is beyond the scope of this book. 
 It would be a nice exercise to try and implement them yourself. 
 You may take a look at 
-[util/access.h](https://github.com/arobenko/comms_champion/blob/master/src/lib/comms/include/comms/util/access.h)
+[util/access.h](https://github.com/arobenko/comms_champion/blob/master/comms/include/comms/util/access.h)
 file in the
 [COMMS Library](https://github.com/arobenko/comms_champion#comms-library)
 of the [comms_champion](https://github.com/arobenko/comms_champion) project
