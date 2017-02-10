@@ -9,7 +9,7 @@ fields to be simple declarative statements of type and class definitions,
 which specify **WHAT** needs to be implemented. The library internals handle 
 the **HOW** part.
 
-**NOTE**, that the ideas expressed in thise book are very basic ones, the
+**NOTE**, that the ideas expressed in this book are very basic ones, the
 mentioned [COMMS Library](https://github.com/arobenko/comms_champion#comms-library)
 is much more advanced than the examples provided in this book. It is recommended
 to read the library's tutorial and, as an excersice, to think about ways how the

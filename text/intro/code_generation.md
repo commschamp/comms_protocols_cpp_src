@@ -53,11 +53,10 @@ written one where extra logic is required.
 The generalisation is hard. Especially when the main focus of the tools'
 developers is on supporting as many target programming languages as possible, 
 rather than allowing multiple configuration variants of a single specific
-language. Currently there is no universal "fit all needs" code generation 
+language. Currently there is no universal **fit all needs** code generation 
 solution that can handle all the existing and being used binary communication protocols. 
 As the result many embedded C++ developers still have to manually implement
-the required binary communication protocol rather than relying on the existing
-tools for code generation.
+them rather than relying on the existing tools for code generation.
 
 There is still a way to help them in such endeavour by
 developing a C++ library which will provide highly configurable classes, usage
