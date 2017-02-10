@@ -14,7 +14,7 @@ There are so many of them:
 [Thrift](https://thrift.apache.org/), [Kaitai Struct](http://kaitai.io/),
 [Protlr](https://www.protlr.com/), you-name-it...
 All of these tools are capable of generating **C++** code. However,
-the generated code quite often is not good enough be used in embedded systems, especially
+the generated code quite often is not good enough to be used in embedded systems, especially
 bare-metal ones. Either the produced **C++** code or the tool itself has 
 **at least** one of the following limitations:
 
@@ -54,11 +54,12 @@ The generalisation is hard. Especially when the main focus of the tools'
 developers is on supporting as many target programming languages as possible, 
 rather than allowing multiple configuration variants of a single specific
 language. Currently there is no universal "fit all needs" code generation 
-solution. 
-
+solution that can handle all the existing and being used binary communication protocols. 
 As the result many embedded C++ developers still have to manually implement
 the required binary communication protocol rather than relying on the existing
-tools for code generation. There is still a way to help them in such endeavour by
+tools for code generation.
+
+There is still a way to help them in such endeavour by
 developing a C++ library which will provide highly configurable classes, usage
 of which will allow to implement required functionality using simple declarative
 statements of types and classes definitions (instead of implementing everything
