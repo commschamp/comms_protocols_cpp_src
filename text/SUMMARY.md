@@ -1,6 +1,7 @@
 # Summary
 
 * [Introduction](README.md)
+    * [Code Generation vs C++ Library](intro/code_generation.md)
     * [Main Challenges](intro/challenges.md)
     * [Goal](intro/goal.md)
     * [Audience](intro/audience.md)

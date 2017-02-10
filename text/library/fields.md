@@ -707,7 +707,7 @@ public:
     using ValueType = StringStorageTypeT<ParsedOptions>;
 
     // Use the basic field and wrap it with adapters just like IntValueField earlier
-    using Basic = BasicIntValue<TBase, TValueType>;
+    using Basic = BasicStringValue<TBase, ValueType>;
     using Adapted = typename FieldBuilder<Basic, TOptions...>::Type;
     
     // Just forward all the API requests to the adapted field.
@@ -748,6 +748,40 @@ template <typename TMsgInterface>
 class ActualMessage3 : public 
     comms::MessageBase<
         comms::option::FieldsImpl<ActualMessage3Fields<typename TMsgInterface::Field> >,
+        ...
+    >
+{
+};
+```
+
+And what about the case, when there is a need to create a message with a 
+string field, but substitute the underlying default `std::string` type with 
+`StaticString` **only** when compiling the bare-metal application? In this
+case the `ActualMessage3` class may be defined to have additional template
+parameter which will determine the necessity to substitute the storage type.
+```cpp
+template <bool THasFixedSize>
+struct StringExtraOptions
+{
+    using Type = comms::option::EmtpyOption; // doesn't do anything
+};
+
+template <>
+struct StringExtraOptions<false>
+{
+    using Type = comms::option::FixedStorageSize<128> >; // forces static storage
+};
+
+template <typename TFieldBase, bool THasFixedSize>
+using ActualMessage3Fields = std::tuple<
+    comms::StringField<TFieldBase, typename StringExtraOptions<THasFixedSize>::Type>,
+    ...
+>:
+
+template <typename TMsgInterface, bool THasFixedSize = false>
+class ActualMessage3 : public 
+    comms::MessageBase<
+        comms::option::FieldsImpl<ActualMessage3Fields<typename TMsgInterface::Field, THasFixedSize> >,
         ...
     >
 {

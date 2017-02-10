@@ -1,4 +1,4 @@
-# Practical Guide to Implementing Communication Protocols in C++ (for Embedded Systems)
+# Guide to Implementing Communication Protocols in C++ (for Embedded Systems)
 
 Almost every electronic device/component nowadays has to be able to communicate 
 to other devices, components, or outside world over some I/O link. Such 
@@ -23,8 +23,8 @@ declarative statements of class and type definitions.
 As stated in the book's title, the main focus of this book is a development 
 for embedded systems (including bare-metal ones). There is no use of 
 RTTI and/or exceptions. 
-I also make a significant effort to minimise or exclude altogether 
-dynamic memory allocation when possible. All the presented techniques and 
+I also make a significant effort to minimise usage of dynamic memory allocation
+and provide means to exclude it altogether if needed. All the presented techniques and 
 design choices are also applicable to non-embedded systems which don't have 
 limitations of the latter.
 
