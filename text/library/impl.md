@@ -1,7 +1,7 @@
 # Generalising Message Implementation
 
 Previous chapters described `MessageBase` class, which provided implementation for
-some portions of polymorphic behaviour defined in the the interface class `Message`.
+some portions of polymorphic behaviour defined in the interface class `Message`.
 Such implementation eliminated common boilerplate code used in every `ActualMessage*`
 class.
 

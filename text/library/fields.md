@@ -284,7 +284,7 @@ used later.
 ```cpp
 namespace comms
 {
-template <typename... TOptsion>
+template <typename... TOptions>
 struct FieldParsedOptions;
 
 template <>
@@ -295,7 +295,7 @@ struct FieldParsedOptions<>
     static const bool HasVarLengthLimits = false;
 }
 
-template <std::size_t TLen, typename... TOptsion>
+template <std::size_t TLen, typename... TOptions>
 struct FieldParsedOptions<option::FixedLength<TLen>, TOptions...> : 
     public FieldParsedOptions<TOptions...>
 {
@@ -645,7 +645,7 @@ The parsed option structure needs to be extended with new information:
 ```cpp
 namespace comms
 {
-template <typename... TOptsion>
+template <typename... TOptions>
 struct FieldParsedOptions;
 
 template <>
@@ -655,7 +655,7 @@ struct FieldParsedOptions<>
     static const bool HasFixedSizeStorage = false;
 }
 
-template <std::size_t TSize, typename... TOptsion>
+template <std::size_t TSize, typename... TOptions>
 struct FieldParsedOptions<option::FixedSizeStorage<TSize>, TOptions...> : 
     public FieldParsedOptions<TOptions...>
 {

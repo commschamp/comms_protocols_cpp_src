@@ -451,7 +451,7 @@ union AllMessagesU
 However, all the required message types are provided as `std::tuple`, not 
 as `union`. What we need is something like 
 [std::aligned_union](http://en.cppreference.com/w/cpp/types/aligned_union), but
-for the the types already bundled in `std::tuple`. It turns out it is very easy to
+for the types already bundled in `std::tuple`. It turns out it is very easy to
 implement using template specialisation:
 ```cpp
 template <typename TTuple>

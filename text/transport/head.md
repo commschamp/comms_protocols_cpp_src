@@ -106,7 +106,7 @@ Also note, that one of the chunks will have to define pointer to the created
 message object (`MsgPtr`). Usually it is the chunk that is responsible to process `ID`
 value. 
 
-The sequential processing the the transport information "chunks", and stripping
+The sequential processing the transport information "chunks", and stripping
 them one by one before proceeding to the next one, may remind of 
 [OSI Conceptual Model](https://en.wikipedia.org/wiki/OSI_model), where
 a layer serves the layer above it and is served by the layer below it. 
