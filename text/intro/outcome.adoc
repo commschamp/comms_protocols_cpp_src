@@ -1,0 +1,27 @@
+=== Final Outcome ===
+
+The ideas summarised in this book are not just _theoretical_ ones. There is 
+ready to use implementation called 
+https://github.com/commschamp/comms_champion#comms-library[COMMS Library]. 
+It provides all the necessary types and classes to 
+make the definition of the custom messages as well as wrapping transport data 
+fields to be simple declarative statements of type and class definitions, 
+which specify *WHAT* needs to be implemented. The library internals handle 
+the *HOW* part.
+
+*NOTE*, that the ideas expressed in this book are very basic ones, the
+mentioned https://github.com/commschamp/comms_champion#comms-library[COMMS Library]
+is much more advanced than the examples provided in this book. It is recommended
+to read the library's tutorial and, as an excersice, to think about ways how the
+provided examples can be extended to support the described features.
+
+The https://github.com/commschamp/comms_champion#comms-library[COMMS Library]
+is a part of a bigger project called
+https://github.com/commschamp/comms_champion[CommsChampion].
+It contains generic plug-in based tools for visualisation and analysis of 
+the communication protocols, which have been implemented using the
+provided library.
+
+
+
+
