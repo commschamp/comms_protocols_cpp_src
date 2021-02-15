@@ -1,12 +1,13 @@
-# Reading and Writing
+=== Reading and Writing ===
 
 When new raw data bytes are received over some I/O link, they need to be 
 deserialised into the custom message object, then dispatched to an appropriate
-handling function. When continuing **message as an object** concept, expressed in
+handling function. When continuing *message as an object* concept, expressed in
 previous chapter, it becomes convenient to make a reading/writing functionality
 a responsibility of the message object itself.
 
-```cpp
+[source, c++]
+----
 class Message 
 {
 public:
@@ -42,11 +43,12 @@ protected:
     virtual ErrorStatus readImpl(...) override {...}; 
     virtual ErrorStatus writeImpl(...) const override {...};
 };
-```
+----
 
 There is obviously a need to know success/failure status of the read/write operation. 
 The `ErrorStatus` return value may be defined for example like this:
-```cpp
+[source, c++]
+----
 enum class ErrorStatus
 {
     Success,
@@ -55,17 +57,18 @@ enum class ErrorStatus
     InvalidMsgData,
     ...
 };
-```
+----
 
 Let's assume, that at the stage of parsing transport wrapping information, the
 ID of the message was retrieved and appropriate actual message object was
-created in an **efficient** way. This whole process will be described later in
-the [Transport](../transport/head.md) chapter.
+created in an *efficient* way. This whole process will be described later in
+the <<transport-transport>> chapter.
 
 Once the appropriate message object was created and returned in some kind of
 smart pointer, just call the `read(...)` member function of the message object:
 
-```cpp
+[source, c++]
+----
 using MsgPtr = std::unique_ptr<Message>;
 
 MsgPtr msg = processTransportData(...)
@@ -74,21 +77,22 @@ if (es != ErrorStatus::Success) {
     ... // handle error
 }
 
-```
+----
 
-## Data Structures Independence
+==== Data Structures Independence ====
 
-One of our [goals](../intro/goal.md) was to make the implementation
+One of our <<intro-goal, goals>> was to make the implementation
 of the communication protocol to be system independent. 
 In order to make the code as generic as possible we have to eliminate any dependency
 on specific data structures, where the incoming raw bytes are stored before being
 processed, as well as outgoing data before being sent out. 
 
 The best way to achieve such independence is to use 
-[iterators](http://en.cppreference.com/w/cpp/concept/Iterator) instead of
+http://en.cppreference.com/w/cpp/concept/Iterator[iterators] instead of
 specific data structures and make it a responsibility of the caller to maintain
 appropriate buffers:
-```cpp
+[source, c++]
+----
 template <typename TReadIter, typename TWriteIter>
 class Message
 {
@@ -127,7 +131,7 @@ protected:
     virtual ErrorStatus writeImpl(WriteIterator& iter, std::size_t len) const override {...};
 };
 
-```
+----
 Please note, that iterators are passed by reference, which allows the increment
 and assignment operations required to implement serialisation/deserialisation
 functionality.
@@ -137,7 +141,8 @@ in any system with any restrictions. For example, the bare-metal embedded system
 cannot use dynamic memory allocation and must serialise the outgoing messages
 into a static array, which forces the definition of the write iterator to be
 `std::uint8_t*`. 
-```cpp
+[source, c++]
+----
 using EmbReadIter = const std::uint8_t*;
 using EmbWriteIter = std::uint8_t*; 
 using EmbMessage = Message<EmbReadIter, EmbWriteIter>
@@ -150,14 +155,15 @@ EmbWriteIter iter = &outBuf[0];
 EmbActualMessage1 msg;
 msg.write(iter, outBuf.size());
 auto writtenCount = std::distance(&outBuf[0], iter); // iter was incremented
-```
+----
 
 The Linux server system which resides on the other end of
 the I/O link doesn't have such limitation and uses `std::vector<std::uint8_t>`
 to store outgoing serialised messages. The generic and data structures independent 
 implementation above makes it possible to be reused:
 
-```cpp
+[source, c++]
+----
 using LinReadIter = const std::uint8_t*;
 using LinWriteIter = std::back_insert_iterator<std::vector<std::uint8_t> >; 
 using LinMessage = Message<LinReadIter, LinWriteIter>
@@ -171,15 +177,16 @@ LinActualMessage1 msg;
 msg.write(iter, outBuf.max_size());
 auto writtenCount = outBuf.size();
 
-```
+----
 
-## Data Serialisation
+==== Data Serialisation ====
 
 The `readImpl()` and `writeImpl()` member functions of the actual message
 class are supposed to properly serialise and deserialise message fields. It is
 a good idea to provide some common serialisation functions accessible by the
 actual message classes.
-```cpp
+[source, c++]
+----
 template <typename TReadIter, typename TWriteIter>
 class Message
 {
@@ -190,7 +197,7 @@ protected:
     template <typename T>
     static void writeData(T value, WriteIterator& iter) {...}
 };
-```
+----
 
 The `readData()` and `writeData()` static member functions above are responsible
 to implement the serialisation and deserialisation of the values using the
@@ -202,7 +209,8 @@ to have only 3 bytes. In this case the value will probably be stored in a
 variable of `std::uint32_t` type. There must be similar set of functions, 
 but with additional template parameter that specifies how many bytes to read/write:
 
-```cpp
+[source, c++]
+----
 template <typename TReadIter, typename TWriteIter>
 class Message
 {
@@ -213,9 +221,9 @@ protected:
     template <std::size_t TSize, typename T>
     static void writeData(T value, WriteIterator& iter) {...}
 };
-```
+----
 
-**CAUTION**: The interface described above is very easy and convenient to use 
+*CAUTION*: The interface described above is very easy and convenient to use 
 and quite easy to implement using straightforward approach. However, any 
 variation of template parameters create an instantiation of new binary code, 
 which may create significant code bloat if not used carefully. 
@@ -242,9 +250,9 @@ of the serialisation/deserialisation functionality with multiple levels of
 abstraction which is beyond the scope of this book. 
 It would be a nice exercise to try and implement them yourself. 
 You may take a look at 
-[util/access.h](https://github.com/arobenko/comms_champion/blob/master/comms/include/comms/util/access.h)
+https://github.com/commschamp/comms_champion/blob/master/comms/include/comms/util/access.h[util/access.h]
 file in the
-[COMMS Library](https://github.com/arobenko/comms_champion#comms-library)
-of the [comms_champion](https://github.com/arobenko/comms_champion) project
+https://github.com/commschamp/comms_champion#comms-library[COMMS Library]
+of the https://github.com/commschamp/comms_champion[comms_champion] project
 for reference.
 

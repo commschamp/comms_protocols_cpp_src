@@ -1,51 +1,70 @@
-cmake_minimum_required (VERSION 2.8)
-project ("Practical Guide to Implementing Communication Protocols in C++" NONE)
+cmake_minimum_required (VERSION 3.5)
+project ("comms_protocols_cpp" NONE)
 
-set(IMAGES_DIR "image")
-set(TEXT_DIR "text")
-set(DIA_DIR "dia")
-SET(PUBLISH_DIR "publish")
+find_program (ASCIIDOCTOR_EXE asciidoctor)
+if (NOT ASCIIDOCTOR_EXE)
+    message(FATAL_ERROR "asciidoctor is not found")
+endif ()
 
-set(SITE_TARGET "site")
-set(SITE_BASE_TARGET "site_base")
-set(SITE_IMAGES_TARGET "site_images")
+find_program (ASCIIDOCTOR_PDF_EXE asciidoctor-pdf)
+if (NOT ASCIIDOCTOR_PDF_EXE)
+    message(FATAL_ERROR "asciidoctor-pdf is not found")
+endif ()
+
+find_program (DIA_EXE dia)
+if (NOT DIA_EXE)
+    message(FATAL_ERROR "dia is not found")
+endif ()
+
+set (VERSION "v1.0")
+set (TEXT_DIR "${PROJECT_SOURCE_DIR}/text")
+set (MAIN_FILE "${TEXT_DIR}/comms_protocols_cpp.adoc")
+
 set(IMAGES_TARGET "images")
-set(PUBLISH_TEXT_TARGET "publish_text")
-set(PUBLISH_IMAGES_TARGET "publish_images")
-set(PUBLISH_TARGET "publish")
-
-set(SITE_TIMESTAMP_FILE "${CMAKE_BINARY_DIR}/site_created.txt")
-set(PUBLISH_TEXT_TIMESTAMP_FILE "${CMAKE_BINARY_DIR}/publish_text.txt")
-
-file (GLOB DIA_FILES ${CMAKE_CURRENT_SOURCE_DIR}/${DIA_DIR}/*.dia)
-file (GLOB TEXT_FILES "${CMAKE_SOURCE_DIR}/${TEXT_DIR}/*")
+set(PDF_TARGET "pdf")
+set(SITE_TARGET "site")
+set(BUILD_IMAGES_DIR "${PROJECT_BINARY_DIR}/images")
 
 ###################################################################
 
 function (images)
+    file (GLOB dia_files ${PROJECT_SOURCE_DIR}/dia/*.dia)
+    file (GLOB images_files ${PROJECT_SOURCE_DIR}/images/*)
     set (images_targets)
-    foreach (f ${DIA_FILES})
+    foreach (f ${dia_files})
         string (REPLACE ".dia" ".png" temp ${f})
-        string (REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/${DIA_DIR}" "${CMAKE_BINARY_DIR}/${IMAGES_DIR}" image ${temp})
-        string (REPLACE "${CMAKE_BINARY_DIR}/${IMAGES_DIR}/" "" target ${image})
+        string (REPLACE "${PROJECT_SOURCE_DIR}/dia" "${BUILD_IMAGES_DIR}" out_file ${temp})
+        string (REPLACE "${BUILD_IMAGES_DIR}/" "" target ${out_file})
+        
         add_custom_command(
-            OUTPUT "${image}"
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/${IMAGES_DIR}"
-            COMMAND dia -e ${image} -t png-libart ${f}
-            DEPENDS ${f}
+            OUTPUT "${out_file}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${BUILD_IMAGES_DIR}"
+            COMMAND dia -e ${out_file} -t png-libart ${f}
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/images ${BUILD_IMAGES_DIR}
+            DEPENDS ${f} ${images_files}
         )
 
         add_custom_target(
-            "${target}"
-            DEPENDS "${image}"
+            "${target}" DEPENDS "${out_file}"
         )
 
-        set(images_targets ${images_targets} ${target})
+        list(APPEND images_targets ${target})
     endforeach ()
 
     add_custom_target(
-        ${IMAGES_TARGET} ALL
-        DEPENDS ${images_targets}
+        ${IMAGES_TARGET} ALL DEPENDS ${images_targets}
+    )
+
+endfunction ()
+
+###################################################################
+
+function (pdf)
+    add_custom_target(${PDF_TARGET} ALL
+        COMMAND ${ASCIIDOCTOR_PDF_EXE} -a imagesdir=${PROJECT_BINARY_DIR} ${MAIN_FILE}
+        COMMAND ${CMAKE_COMMAND} -E rename "${TEXT_DIR}/comms_protocols_cpp.pdf" "${PROJECT_BINARY_DIR}/comms_protocols_cpp_${VERSION}.pdf"
+        WORKING_DIRECTORY ${TEXT_DIR}
+        DEPENDS ${IMAGES_TARGET}
     )
 
 endfunction ()
@@ -53,62 +72,17 @@ endfunction ()
 ###################################################################
 
 function (site)
-    add_custom_command(
-        OUTPUT "${SITE_TIMESTAMP_FILE}"
-        COMMAND gitbook build ${CMAKE_SOURCE_DIR}/${TEXT_DIR} ${CMAKE_BINARY_DIR}/${SITE_TARGET}
-        COMMAND ${CMAKE_COMMAND} -E touch "${SITE_TIMESTAMP_FILE}"
-        DEPENDS ${TEXT_FILES} ${IMAGES_TARGET}
+    add_custom_target(${SITE_TARGET} ALL
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/site/images
+        COMMAND ${ASCIIDOCTOR_EXE} -D ${PROJECT_BINARY_DIR}/site -o index.html ${MAIN_FILE}
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${BUILD_IMAGES_DIR} ${PROJECT_BINARY_DIR}/site/images/
+        WORKING_DIRECTORY ${TEXT_DIR}
+        DEPENDS ${IMAGES_TARGET}
     )
-
-    add_custom_target(
-        ${SITE_BASE_TARGET} ALL
-        DEPENDS "${SITE_TIMESTAMP_FILE}"
-    )
-
-    add_custom_target(
-        ${SITE_IMAGES_TARGET} ALL
-        ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/${IMAGES_DIR} ${CMAKE_BINARY_DIR}/${SITE_TARGET}/${IMAGES_DIR}
-        DEPENDS ${IMAGES_TARGET} ${SITE_BASE_TARGET}
-    )
-
-    add_custom_target(
-        ${SITE_TARGET} ALL
-        DEPENDS ${SITE_BASE_TARGET} ${SITE_IMAGES_TARGET}
-    )
-
-endfunction ()
-
-###################################################################
-function (publish)
-    add_custom_command(
-        OUTPUT "${PUBLISH_TEXT_TIMESTAMP_FILE}"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/${TEXT_DIR} ${CMAKE_BINARY_DIR}/${PUBLISH_DIR}
-        COMMAND ${CMAKE_COMMAND} -E touch "${PUBLISH_TEXT_TIMESTAMP_FILE}"
-        DEPENDS ${TEXT_FILES} ${IMAGES_TARGET}
-    )
-
-    add_custom_target(
-        ${PUBLISH_TEXT_TARGET} ALL
-        DEPENDS "${PUBLISH_TEXT_TIMESTAMP_FILE}"
-    )
-
-    add_custom_target(
-        ${PUBLISH_IMAGES_TARGET} ALL
-        ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/${IMAGES_DIR} ${CMAKE_BINARY_DIR}/${PUBLISH_DIR}/${IMAGES_DIR}
-        DEPENDS ${IMAGES_TARGET} ${PUBLISH_TEXT_TARGET}
-    )
-
-    add_custom_target(
-        ${PUBLISH_TARGET} ALL
-        DEPENDS ${PUBLISH_TEXT_TARGET} ${PUBLISH_IMAGES_TARGET}
-    )
-
 endfunction ()
 
 ###################################################################
 
 images()
+pdf()
 site()
-publish()
-
-

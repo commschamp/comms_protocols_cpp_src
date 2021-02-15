@@ -1,15 +1,16 @@
-# Message
+== Message ==
 
-Most C++ developers intuitively choose to express every independent message as 
+Most C{plus}{plus} developers intuitively choose to express every independent message as 
 a separate class, which inherit from a common interface. 
 
-![Image: Message class hierarchy](../image/message.png)
+image::images/message.png[Image: Message class hierarchy]
 
-This is a step to the **right** direction.
+This is a step to the *right* direction.
 It becomes easy and convenient to write a common code that suites all
 possible messages:
 
-```cpp
+[source, c++]
+----
 class Message 
 {
 public:
@@ -43,6 +44,9 @@ void sendMessage(const Message& msg)
     msg.write(...); // write message to a buffer
     ...// send buffer contents over I/O link;
 }
-```
+----
 
+include::read_write.adoc[]
+include::dispatch_handle.adoc[]
+include::extend_interface.adoc[]
 

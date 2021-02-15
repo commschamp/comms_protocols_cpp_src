@@ -1,10 +1,11 @@
-# Extending Interface
+=== Extending Interface ===
 
 Let's assume the protocol was initially developed for some embedded system
-which required very basic message interface of only **read** / **write** / **dispatch**. 
+which required very basic message interface of only *read* / *write* / *dispatch*. 
 
 The interface class definition was defined allowing iterators to be specified elsewhere:
-```cpp
+[source, c++]
+----
 class Handler;
 template <typename TReadIterator, typename TWriteIterator>
 class Message
@@ -36,20 +37,22 @@ protected:
     virtual ErrorStatus writeImpl(WriteIterator& iter, std::size_t len) const = 0;
     virtual void dispatchImpl(Handler& handler) = 0;
 };
-```
+----
 
 The intermediate class allowing common implementation of `dispatchImpl()`:
-```cpp
+[source, c++]
+----
 template <typename TReadIterator, typename TWriteIterator, typename TDerived>
 class MessageBase : public Message<TReadIterator, TWriteIterator>
 {
 protected:
     virtual void dispatchImpl(Handler& handler) override {...};
 };
-```
+----
 
 And the actual message classes:
-```cpp
+[source, c++]
+----
 template <typename TReadIterator, typename TWriteIterator>
 class ActualMessage1 : public MessageBase<TReadIterator, TWriteIterator, ActualMessage1>
 {
@@ -62,7 +65,7 @@ class ActualMessage2 : public MessageBase<TReadIterator, TWriteIterator, ActualM
     ...
 };
 
-```
+----
 
 Then, after a while a new application needs to be developed, which monitors
 the I/O link and dumps all the message traffic into standard output and/or *.csv file. This
@@ -74,7 +77,8 @@ the embedded system, which does not require this additional functionality and
 its binary code should not contain these extra functions.
 
 One of the solutions can be to use preprocessor:
-```cpp
+[source, c++]
+----
 template <...>
 class Message
 {
@@ -107,7 +111,7 @@ protected:
 #endif    
 };
 
-```
+----
 
 Such approach may work for some products, but not for others, especially ones
 that developed by multiple teams. If one team developed a reference implementation
@@ -119,17 +123,19 @@ Another approach is to remove hard coded
 inheritance relationship between `Message` interface class and intermediate
 `MessageBase` class. Instead, provide the common interface class as a 
 template parameter to the latter:
-```cpp
+[source, c++]
+----
 template <typename TIternface, typename TDerived>
 class MessageBase : public TIternface
 {
 protected:
     virtual void dispatchImpl(Handler& handler) override {...};
 }
-```
+----
 
 And the `ActualMessage*` classes will look like this:
-```cpp
+[source, c++]
+----
 template <typename TIternface>
 class ActualMessage1 : public MessageBase<TIternface, ActualMessage1>
 {
@@ -141,23 +147,26 @@ class ActualMessage2 : public MessageBase<TIternface, ActualMessage2>
 {
     ...
 };
-```
+----
 
 Then, the initial embedded system may use the common protocol code like this:
-```cpp
+[source, c++]
+----
 using EmbReadIterator = ...;
 using EmbWriteIterator = ...;
 using EmbMessage = Message<EmbReadIterator, EmbWriteIterator>;
 using EmbMessage1 = ActualMessage1<EmbMessage>;
 using EmbMessage2 = ActualMessage2<EmbMessage>;
-```
+----
 
 The original class hierarchy preserved intact:
-![Image: Original class hierarchy](../image/message_old_interface_hierarchy.png)
+
+image::images/message_old_interface_hierarchy.png[Image: Original class hierarchy]
 
 And when extended interface and functionality are required, just use extra
 class inheritances:
-```cpp
+[source, c++]
+----
 // Define extended interface
 template <typename TReadIterator, typename TWriteIterator> 
 class ExtMessage : public Message<TReadIterator, TWriteIterator>
@@ -183,17 +192,18 @@ protected:
     }
 
 }
-```
+----
 
 The new application that requires extended implementation may still reuse the 
 common protocol code like this:
-```cpp
+[source, c++]
+----
 using NewReadIterator = ...;
 using NewWriteIterator = ...;
 using NewMessage = ExtMessage<NewReadIterator, NewWriteIterator>;
 using NewMessage1 = ExtActualMessage1<NewMessage>;
 using NewMessage2 = ExtActualMessage2<NewMessage>;
-```
+----
 
 As a result, no extra modifications to the original source code of the 
 protocol implementation is required, and every team achieves their own goal. 
@@ -201,4 +211,4 @@ Everyone is happy!!!
 
 The extended class hierarchy becomes:
 
-![Image: Extended class hierarchy](../image/message_ext_interface_hierarchy.png)
+image::images/message_ext_interface_hierarchy.png[Image: Extended class hierarchy]

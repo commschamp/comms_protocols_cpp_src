@@ -1,0 +1,14 @@
+= Guide to Implementing Communication Protocols in C{plus}{plus} (for Embedded Systems)
+Alex Robenko
+v1.0
+:doctype: article
+:toc: left
+:source-highlighter: rouge
+:title-page:
+:numbered!:
+:sectnums!:
+:revinfo!:
+
+include::intro/intro.adoc[]
+include::message/message.adoc[]
+
