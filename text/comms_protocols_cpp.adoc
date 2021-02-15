@@ -11,4 +11,5 @@ v1.0
 
 include::intro/intro.adoc[]
 include::message/message.adoc[]
+include::fields/fields.adoc[]
 

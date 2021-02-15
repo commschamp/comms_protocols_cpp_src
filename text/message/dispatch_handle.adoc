@@ -1,3 +1,4 @@
+[[message-dispatch_handle]]
 === Dispatching and Handling ===
 
 When a new message arrives, its appropriate object is created, and the contents

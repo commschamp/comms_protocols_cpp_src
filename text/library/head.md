@@ -1,3 +1,4 @@
+[[library-library]]
 # Generic Library
 
 All the generalisation techniques, described so far, are applicable to most

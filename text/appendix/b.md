@@ -1,3 +1,4 @@
+[[appendix-b]]
 # Appendix B - tupleAccumulate
 
 Implementation of `tupleAccumulate()` function. Namespace `details` contains some

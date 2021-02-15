@@ -1,11 +1,13 @@
-# Working With Fields
+[[fields-access]]
+=== Working With Fields ===
 
-In order to [automate](automation.md) some basic operations, all the fields
+In order to <<fields-automation, automate>> some basic operations, all the fields
 had to provide the same basic interface. As the result the actual field values
 had to be wrapped in a class that defines the required public interface.
 Such class must also provide means to access/update the wrapped value.
 For example:
-```cpp
+[source, c++]
+----
 class SomeField
 {
 public:
@@ -19,24 +21,26 @@ public:
 private:
     ValueType m_value;
 }
-```
+----
 
 Let's assume the `ActualMessage1` defines 3 integer value fields with 
 serialisation lengths of 1, 2, and 4 bytes respectively.
-```cpp
+[source, c++]
+----
 using ActualMessage1Fields = std::tuple<
     IntValueField<std::int8_t>,
     IntValueField<std::int16_t>
     IntValueField<std::int32_t>
 >;
 class ActualMessage1 : public MessageBase<ActualMessage1Fields> {...};
-```
+----
 
-The [Dispatching and Handling](../message/dispatch_handle.md) chapter described
+The <<message-dispatch_handle>> chapter described
 the efficient way to dispatch message object to its handler. The appropriate
 handling function may access its field's value using the following code 
 flow:
-```cpp
+[source, c++]
+----
 class Handler
 {
 public:
@@ -58,11 +62,12 @@ public:
         ... Do something with retrieved values
     }
 };
-```
+----
 
 When preparing message to send, the similar code sequence may be applied to
 update the values:
-```cpp
+[source, c++]
+----
 ActualMessage1 msg;
 
 // Get access to the field's bundle of type std::tuple
@@ -80,4 +85,4 @@ field3.value() = ...;
 
 // Serialise and send the message:
 sendMessage(msg);
-```
+----

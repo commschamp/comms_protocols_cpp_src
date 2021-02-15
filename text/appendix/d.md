@@ -1,3 +1,4 @@
+[[appendix-d]]
 # Appendix D - tupleForEachType
 
 Implementation of `tupleForEachType()` function. Namespace `details` contains some

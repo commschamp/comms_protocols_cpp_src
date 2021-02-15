@@ -1,3 +1,4 @@
+[[appendix-a]]
 # Appendix A - tupleForEach
 
 Implementation of `tupleForEach()` function. Namespace `details` contains some

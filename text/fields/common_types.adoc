@@ -1,4 +1,5 @@
-# Common Field Types
+[[fields-common_types]]
+=== Common Field Types ===
 
 The majority of communication protocols use relatively small set of various
 field types. However, the number of various ways used to serialise these fields,
@@ -7,9 +8,10 @@ as well as handle them in different parts of the code, may be significantly bigg
 It would be impractical to create a separate class for each and every variant
 of the same type fields. That's why there is a need to use template parameters
 when defining a frequently used field type. The basic example would be implementing
-**numeric integral value** fields. Different fields of such type may have
+*numeric integral value* fields. Different fields of such type may have
 different serialisation lengths.
-```cpp
+[source, c++]
+----
 template <typename TValueType>
 class IntValueField
 {
@@ -29,19 +31,20 @@ public:
 private:
     ValueType m_value = 0;    
 };
-```
+----
 
 Below is a description of most common fields used by majority of 
 binary communication protocols with the list of possible variations, that can
 influence how the field is serialised and/or handled. 
 
-The [Generic Library](../library/head.md) chapter will
+The <<library-library>> chapter will
 concentrate on how to generalise development of any communication protocol by
 creating a generic library and reusing it in independent implementations of
 various protocols. It will also explain how to create generic field 
 classes for the types listed below.
 
-## Numeric Integral Values
+[[fields-common_types-numeric_integral]]
+==== Numeric Integral Values ====
 
 Used to operate with simple numeric integer values.
 
@@ -54,28 +57,31 @@ for signed values, such as adding some predefined offset prior
 to serialisation to make sure that the value being serialised is non-negative. When
 value deserialised, the same offset must be subtracted to get the actual value.
 - May have variable serialisation length, based on the value being serialised,
-such as having [Base-128](https://en.wikipedia.org/wiki/Variable-length_quantity)
+such as having https://en.wikipedia.org/wiki/Variable-length_quantity[Base-128]
 encoding.
 
-## Enumeration Values
+[[fields-common_types-enum]]
+==== Enumeration Values ====
 
-Similar to [Numeric Integral Values](#numeric-integral-values), but storing
+Similar to <<fields-common_types-numeric_integral>>, but storing
 the value as enumeration type for easier access.
 
-## Bitmask Values
+[[fields-common_bitmask]]
+==== Bitmask Values ====
 
-Similar to [Numeric Integral Values](#numeric-integral-values), but with 
-**unsigned** internal storage type and with each bit having separate meaning. 
+Similar to <<fields-common_types-numeric_integral>>, but with 
+*unsigned* internal storage type and with each bit having separate meaning. 
 The class definition should support having different serialisation lengths as
 well as provide a convenient interface to inquire about and update various bits'
 values.
 
-## Strings
+[[fields-common_types-strings]]
+==== Strings ====
 
 Some protocols serialise strings by prefixing the string itself with its size,
-others have '\0' suffix to mark the end of the string. 
+others have `'\0'` suffix to mark the end of the string. 
 Some strings may be allocated a fixed size and require
-'\0' padding if its actual length is shorter.
+`'\0'` padding if its actual length is shorter.
 
 Consider how the internal string value is stored. Usually `std::string` is used.
 However, what about the bare-metal embedded systems, that disallow usage of
@@ -84,10 +90,11 @@ underlying `std::string` with a custom implementation of some `StaticString`
 that exposes similar interface, but receives a maximum storage size as a template
 parameter.
 
-## Lists
+[[fields-common_types-lists]]
+==== Lists ====
 
 There may be lists of raw bytes, list of other fields, or even a group of fields.
-Similar to [Strings](#strings), the serialisation of lists may differ. Lists of
+Similar to <<fields-common_types-strings>>, the serialisation of lists may differ. Lists of
 variable size may require a prefix with their size information. Other lists
 may have fixed (predefined) size and will not require any additional size
 information.
@@ -98,21 +105,21 @@ required. For example some custom implementation of `StaticVector` that exposes
 the same public interface, but receives a maximum storage size as a template parameter.
 There must be an easy way to substitute one with another.
 
-## Bundles
+[[fields-common_types-bundles]]
+==== Bundles ====
 
 The group of fields sometimes needs to be bundled into a single entity and
-be treated as a single field. The good example would be having a [list](#lists)
+be treated as a single field. The good example would be having a <<fields-common_types-lists, list>>
 of complex structures (bundles).
 
-## Bitfields
+==== Bitfields ====
 
-Similar to [Bundles](#bundles), where every field member takes only limited 
+Similar to <<fields-common_types-bundles>>, where every field member takes only limited 
 number of bits instead of bytes. Usually the members of the bitfields are
-[Numeric Integral Values](#numeric-integral-values), 
-[Enumeration Values](#enumeration-values), and
-[Bitmask Values](#bitmask-values)
+<<fields-common_types-numeric_integral>>, 
+<<fields-common_types-enum>>, and <<fields-common_types-bitmask>>.
 
-## Common Variations
+==== Common Variations ====
 
 All the fields stated above may require an ability to:
 

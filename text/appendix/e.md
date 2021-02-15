@@ -1,3 +1,4 @@
+[[appendix-e]]
 # Appendix E - AlignedUnion
 
 Implementation of `AlignedUnion` type.
