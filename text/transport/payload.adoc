@@ -1,4 +1,5 @@
-# PAYLOAD Layer
+[[transport-payload]]
+=== PAYLOAD Layer ===
 
 Processing of the `PAYLOAD` is always the last stage in the protocol stack.
 All previous layers have successfully processed their transport data, the 
@@ -6,7 +7,8 @@ message object was created and is ready to read its fields encoded in the PAYLOA
 
 Such layer must receive type of the message interface class as a template
 parameter and redefine read/write iterator types.
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TMessage>
@@ -38,10 +40,11 @@ public:
     ...
 };
 } // namespace comms
-```
+----
 
 The read/write operations just forward the request the message object.
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TMessage>
@@ -67,7 +70,7 @@ public:
     }
 };
 } // namespace comms
-```
+----
 Please note that `read()` member function expects to receive a reference to 
 the smart pointer, which holds allocated message object, as the first parameter. 
 The type of the pointer is not known yet. 

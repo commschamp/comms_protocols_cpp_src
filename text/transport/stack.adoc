@@ -1,16 +1,18 @@
-# Defining Protocol Stack
+[[transport-stack]]
+=== Defining Protocol Stack ===
 
 To summarise the protocol [transport](head.md) wrapping subject,
 let's define a custom protocol that wraps the message payload in the following way:
-```
+[source]
+----
 SYNC | SIZE | ID | PAYLOAD | CHECKSUM 
-```
+----
 where:
 
 - All the fields are serialised using BIG endian.
 - SYNC - 2 bytes of synchronisation value to indicate beginning of the message, 
 must be "0xab 0xcd"
-- SIZE - 2 bytes, length of remaining data, **including checksum** and not 
+- SIZE - 2 bytes, length of remaining data, *including checksum* and not 
 including SIZE field itself.
 - ID - 1 byte, numeric ID of the message.
 - PAYLOAD - any number of bytes, serialised message data
@@ -19,14 +21,15 @@ from SIZE field and ending after PAYLOAD field.
 
 The protocol layer should wrap one another in the following way:
 
-![Image: Protcols Stack](../image/protocol_stack.png)
+image::images/protocol_stack.png[Image: Protcols Stack]
 
 Please note, that `CHECKSUM` layer doesn't wrap `SYNC` because synchronisation
 prefix is not included in the checksum calculation.
 
-## Common Protocol Definitions
+==== Common Protocol Definitions ====
 
-```cpp
+[source, c++]
+----
 // BIG endian fields serialisation
 using MyField = comms::Field<false>; 
 
@@ -77,24 +80,27 @@ using AllMessages = std::tuple<
     ActualMessage2<TMessage>,
     ...
 >;
-```
+----
 
-## PAYLOAD Layer
+==== PAYLOAD Layer ====
 
-```cpp
+[source, c++]
+----
 using MyPayloadLayer = comms::MsgDataLayer<MyMessage>;
-```
+----
 
-## ID Layer
+==== ID Layer ====
 
-```cpp
+[source, c++]
+----
 using MyMsgIdField = comms::EnumValueField<MyField, MyMsgId>
 using MyIdLayer = comms::MsgIdLayer<MyMsgIdField, AllMessages, MyPayloadLayer>;
-```
+----
 
-## SIZE Layer
+==== SIZE Layer ====
 
-```cpp
+[source, c++]
+----
 using MySizeField = 
     comms::IntValueField<
         MyField, 
@@ -102,44 +108,48 @@ using MySizeField =
         comms::option::NumValueSerOffset<sizeof(std::uint16_t)>
     >; 
 using MySizeLayer = comms::MsgSizeLayer<MySizeField, MyIdLayer>;
-```
+----
 Please note, that `SIZE` field definition uses `comms::option::NumValueSerOffset`
 option, which effectively adds `2` when size value is serialised, and 
 subtracts it when remaining length is deserialised. It must be done, because
-`SIZE` value specifies **number of remaining bytes**, including the `CHECKSUM` 
+`SIZE` value specifies *number of remaining bytes*, including the `CHECKSUM` 
 value at the end.
 
-## CHECKSUM Layer
+==== CHECKSUM Layer ====
 
-```cpp
+[source, c++]
+----
 using MyChecksumField = comms::IntValueField<MyField, std::uint16_t>;
 using MyChecksumLayer = comms::ChecksumLayer<
     MyChecksumField,
     comms::BasicSum<std::uint16_t>
     MySizeLayer
 >;
-```
+----
 
-## SYNC Layer
+==== SYNC Layer ====
 
-```cpp
+[source, c++]
+----
 using MySyncField = comms::IntValueField<
     MyField, 
     std::uint16_t, 
     comms::option::DefaultNumValue<0xabcd> 
 >;
 using MySyncPrefix = comms::SyncPrefixLayer<SyncField, MyChecksumLayer>;
-```
+----
 
-## Processing Loop
+==== Processing Loop ====
 
 The outermost layer defines a full protocol stack. It should be typedef-ed to avoid any confusion: 
-```cpp
+[source, c++]
+----
 using MyProtocolStack = MySyncPrefix;
-```
+----
 
 The processing loop may look like this:
-```cpp
+[source, c++]
+----
 // Protocol stack
 MyProtocolStack protStack;
 
@@ -173,15 +183,16 @@ void processData()
         inData.erase(inData.begin());
     }
 }
-```
+----
 The processing loop above is not the most efficient one, but it demonstrates 
 what needs to be done and how our generic library can be used to identify 
 and process the received message.
 
-## Writing Message
+==== Writing Message ====
 
 The write logic is even simpler. 
-```cpp
+[source, c++]
+----
 void sendMessage(const MyMessage& msg)
 {
     // Output buffer
@@ -201,4 +212,4 @@ void sendMessage(const MyMessage& msg)
     }
     ... // Send written data over I/O link
 }
-```
+----

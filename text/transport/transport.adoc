@@ -1,33 +1,36 @@
 [[transport-transport]]
-# Transport
+== Transport ==
 
 In addition to definition of the messages and their contents, every 
 communication protocol must ensure that the message is successfully delivered 
 over the I/O link to the other side. The serialised message payload must be 
 wrapped in some kind of transport information, which usually depends on the
 type and reliability of the I/O link being used. For example, protocols that
-are designed to be used over TCP/IP connection, such as [MQTT](http://mqtt.org), 
+are designed to be used over TCP/IP connection, such as http://mqtt.org[MQTT], 
 may omit the whole packet synchronisation and checksum logic, because TCP/IP
 connection ensures that the data is delivered correctly. Such protocols are
 usually defined to use only message ID and remaining size information to wrap
 the message payload:
-```
+[source]
+----
 ID | SIZE | PAYLOAD
-```
+----
 
 Other protocols may be designed to be used over less reliable RS-232 link, 
 which may require a bit better protection against data loss or corruption:
-```
+[source]
+----
 SYNC | SIZE | ID | PAYLOAD | CHECKSUM
-```
+----
 
 The number of most common types of the wrapping "chunks" is quite small. 
 However, different protocols may have different rules of how these values are 
-serialised. Very similar to [Fields](../fields/head.md).  
+serialised. Very similar to <<fields-fields>>.  
 
 The main logic of processing the incoming raw data remains the same for 
 all the protocols, though. It is to read and process the transport information "chunks" one
 by one:
+
 - SYNC - check the next one or more bytes for an expected predefined value.
 If the value is as expected proceed to the next "chunk". If not, drop one
 byte from the front of the incoming data queue and try again.
@@ -43,15 +46,16 @@ the checksums don't match, discard the created message and report error.
 Each and every "chunk" operates independently, regardless of what information
 was processed before and/or after it. When some operation seems to repeat itself
 several times, it should be generalised and become part of our 
-[Generic Library](../library/head.md).
+<<library-library>>.
 
 So, how is it going to be implemented? My advice is to use independent "chunk"
 classes, that expose predefined interface, wrap one another, and forward
 the requested operation to the next "chunk" when appropriate. As was stated
 earlier, the transport information values are very similar to 
-[Fields](../fields/head.md), which immediately takes us to the direction of
-reusing [Field](../fields/head.md) classes to handle these values:
-```cpp
+<<fields-fields>>, which immediately takes us to the direction of
+reusing <<fields-fields, Field>> classes to handle these values:
+[source, c++]
+----
 template <typename TField, typename TNextChunk, ... /* some other template parameters */>
 class SomeChunk
 {
@@ -94,7 +98,7 @@ public:
 private:
     TNextChunk m_next;
 }
-```
+----
 Please note that `ReadIterator` and `WriteIterator` are taken from the next
 chunk. One of the chunks, which is responsible for processing the `PAYLOAD` will
 receive the class of the message interface as a template parameter, will
@@ -109,12 +113,19 @@ value.
 
 The sequential processing the transport information "chunks", and stripping
 them one by one before proceeding to the next one, may remind of 
-[OSI Conceptual Model](https://en.wikipedia.org/wiki/OSI_model), where
+https://en.wikipedia.org/wiki/OSI_model[OSI Conceptual Model], where
 a layer serves the layer above it and is served by the layer below it. 
 
-From now on, I will use a term **layer** instead of the **chunk**. 
+From now on, I will use a term *layer* instead of the *chunk*. 
 The combined bundle of such layers will be called
-**protocol stack** (of layers).
+*protocol stack* (of layers).
 
 Let's take a closer look at all the layer types mentioned above.
+
+include::payload.adoc[]
+include::id.adoc[]
+include::size.adoc[]
+include::sync.adoc[]
+include::checksum.adoc[]
+include::stack.adoc[]
 

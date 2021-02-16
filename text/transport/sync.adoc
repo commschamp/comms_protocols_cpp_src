@@ -1,8 +1,10 @@
-# SYNC Layer
+[[transport-sync]]
+=== SYNC Layer ===
 
 This layer is responsible to find and validate the synchronisation prefix.
 
-```cpp
+[source, c++]
+----
 namespace comms
 {
 // TField is type of the field used to read/write SYNC prefix
@@ -60,16 +62,17 @@ private:
     TNext m_next;
 };
 } // namespace comms
-```
+----
 
 Note, that the value of the `SYNC` prefix is expected to be equal to the value
 of the default constructed `TField` field type. The default construction value
 may be set using `comms::option::DefaultNumValue` option described in
-[Generalising Fields Implementation](../library/fields.md) chapter.
+<<library-fields>> chapter.
 
 For example, 2 bytes synchronisation prefix `0xab 0xcd` with big endian
 serialisation may be defined as:
-```cpp
+[source, c++]
+----
 using CommonFieldBase = comms::Field<false>; // big endian serialisation base
 using SyncPrefixField = 
     comms::IntValueField<
@@ -77,4 +80,4 @@ using SyncPrefixField =
         std::uint16_t,
         comms::option::DefaultNumValue<0xabcd>
     >;
-```
+----

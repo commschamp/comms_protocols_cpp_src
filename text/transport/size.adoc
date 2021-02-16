@@ -1,4 +1,5 @@
-# SIZE Layer
+[[transport-size]]
+=== SIZE Layer ===
 
 This layer is responsible to handle the remaining length information. 
 
@@ -10,7 +11,8 @@ enough data, the read operation of the next (wrapped) layer is invoked.
 number of bytes required to serialise the message prior to invoking the
 write operation of the next (wrapped) layer.
 
-```cpp
+[source, c++]
+----
 namespace comms
 {
 // TField is type of the field used to read/write SIZE information
@@ -69,7 +71,7 @@ private:
     TNext m_next;
 };
 } // namespace comms
-```
+----
 Please note, that reference to the smart pointer holding the message object is passed to
 the `read()` function using *undefined* type (template parameter) instead of
 using the `MsgPtr` internal type. 
@@ -78,15 +80,16 @@ others may do the opposite.
 The `SIZE` layer is not aware of what other layers it wraps. 
 If `ID` information is
 serialised before the `SIZE`, the `MsgPtr` type definition is probably taken
-from [PAYLOAD Layer](payload.md), which is defined to be `void`.
+from <<transport-payload>>, which is defined to be `void`.
 
 Also note, that `write()` function requires knowledge of how many bytes it
 will take to the next layer to serialise the message. It requires every layer
 to define `length(...)` member function in addition to `read()` and `write()`.
 
-The `length()` member function of the [PAYLOAD Layer](payload.md) may be defined
+The `length()` member function of the <<transport-payload>> may be defined
 as: 
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TMessage>
@@ -99,11 +102,12 @@ public:
     }
 };
 } // namespace comms
-```
+----
 
-The `length()` member function of the [ID Layer](id.md) may be defined
+The `length()` member function of the <<transport-id>> may be defined
 as: 
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <
@@ -122,11 +126,12 @@ public:
     }
 };
 } // namespace comms
-```
+----
 
-And the `length()` member function of the [SIZE Layer](size.md) itself may be defined
+And the `length()` member function of the <<transport-size>> itself may be defined
 as: 
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TField, typename TNext>
@@ -141,4 +146,4 @@ public:
     }
 };
 } // namespace comms
-```
+----

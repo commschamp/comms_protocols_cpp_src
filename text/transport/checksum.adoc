@@ -1,4 +1,5 @@
-# CHECKSUM Layer
+[[transport-checksum]]
+=== CHECKSUM Layer ===
 
 This layer is responsible to calculate and validate the checksum information.
 
@@ -16,24 +17,25 @@ data bytes, and writes the result into output buffer.
 Before jumping into writing the code, there is a need to be aware of couple of
 issues:
 
-- The generic code of the **CHECKSUM Layer** mustn't depend on any particular
+- The generic code of the *CHECKSUM Layer* mustn't depend on any particular
 checksum calculation algorithm. I'd recommend providing the calculator class as a template
 parameter, `operator()` of which is responsible to implement the checksum 
 calculation logic.
 - The checksum calculation after write operation requires the iterator to
 go back and calculate the checksum on the written data bytes. It can easily
 be done when used iterator is 
-[random access](http://en.cppreference.com/w/cpp/concept/RandomAccessIterator) 
+http://en.cppreference.com/w/cpp/concept/RandomAccessIterator[random access] 
 one. Sometimes it may not
 be the case (for example the output data is written into 
-[std::vector](http://en.cppreference.com/w/cpp/container/vector) using
-[std::back_insert_iterator](http://en.cppreference.com/w/cpp/iterator/back_insert_iterator)).
+http://en.cppreference.com/w/cpp/container/vector[std::vector] using
+http://en.cppreference.com/w/cpp/iterator/back_insert_iterator[std::back_insert_iterator]).
 There is a need to have a generic way to handle such cases.
 
-## Implementing Read
+==== Implementing Read ====
 
 Let's start with implementing the read first.
-```cpp
+[source, c++]
+----
 namespace comms
 {
 // TField is type of the field used to read/write checksum value
@@ -89,14 +91,15 @@ private:
     TNext m_next;
 };
 } // namespace comms
-```
+----
 
 It is clear that `TCalc` class is expected to have `operator()` member
 function, which receives the iterator for reading and number of bytes 
 in the buffer.
 
 As an example let's implement generic total sum of bytes calculator:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TResult = std::uint8_t>
@@ -119,25 +122,27 @@ public:
     }
 };
 } // namespace comms
-```
+----
 
-## Implementing Write
+==== Implementing Write ====
 
 Now, let's tackle the write problem. As it was mentioned earlier, there is a need to
 recognise the type of the iterator used for writing and behave accordingly. 
 If the iterator is properly defined, the 
-[std::iterator_traits](http://en.cppreference.com/w/cpp/iterator/iterator_traits) 
+http://en.cppreference.com/w/cpp/iterator/iterator_traits[std::iterator_traits] 
 class will define `iterator_category` internal type.
-```cpp
+[source, c++]
+----
 using WriteIteratorCategoryTag = 
     typename std::iterator_traits<WriteIterator>::iterator_category;
-```
+----
 For random access iterators the `WriteIteratorCategoryTag` class will be
-either [std::random_access_iterator_tag](http://en.cppreference.com/w/cpp/iterator/iterator_tags) 
+either http://en.cppreference.com/w/cpp/iterator/iterator_tags[std::random_access_iterator_tag] 
 or any other class that inherits from it. Using this information, we can use
-[Tag Dispatch Idiom](http://www.generic-programming.org/languages/cpp/techniques.php#tag_dispatching)
+http://www.generic-programming.org/languages/cpp/techniques.php#tag_dispatching[Tag Dispatch Idiom]
 to choose the right writing functionality.
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <...>
@@ -199,7 +204,7 @@ private:
     TNext m_next;
 };
 } // namespace comms
-```
+----
 Please pay attention, that `writeOutput()` function above is unable to
 properly calculate the checksum of the written data. There is no way the
 iterator can be reversed back and used as input instead of output. As the
@@ -207,9 +212,10 @@ result the function returns special error status: `ErrorStatus::UpdateRequired`.
 It is an indication that the write operation is not complete and the 
 output should be updated using random access iterator.
 
-## Implementing Update
+==== Implementing Update ====
 
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <...>
@@ -238,13 +244,14 @@ private:
     TNext m_next;
 };
 } // namespace comms
-```
+----
 
 Please note, that every other layer must also implement the `update()` member
 function, which will just advance the provided iterator by the number
 of bytes required to write its field and invoke `update()` member function
 of the next (wrapped) layer.
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TMessage>
@@ -260,9 +267,10 @@ public:
 };
 
 } // namespace comms
-```
+----
 
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <...>
@@ -282,16 +290,17 @@ private:
 };
 
 } // namespace comms
-```
+----
 
 And so on for the rest of the layers. Also note, that the code above will
-work, only when the field has the **same serialisation length for any value**.
+work, only when the field has the *same serialisation length for any value*.
 If this is not the case 
-([Base-128](https://en.wikipedia.org/wiki/Variable-length_quantity) encoding
+(https://en.wikipedia.org/wiki/Variable-length_quantity[Base-128] encoding
 is used), the previously written value needs to be read, instead of
 just advancing the iterator, to make sure the iterator is advanced
 right amount of bytes:
-```cpp
+[source, c++]
+----
 template <typename TIter>
 ErrorStatus update(TIter& iter, std::size_t len) const
 {
@@ -302,10 +311,10 @@ ErrorStatus update(TIter& iter, std::size_t len) const
     }
     return m_next.update(iter, len - field.length());
 }
-```
+----
 The variable serialisation length encoding will be forced using some kind of
 special option. It can be identified at compile time and 
-[Tag Dispatch Idiom](http://www.generic-programming.org/languages/cpp/techniques.php#tag_dispatching)
+http://www.generic-programming.org/languages/cpp/techniques.php#tag_dispatching[Tag Dispatch Idiom]
 can be used to select appropriate `update` functionality.
 
 The caller, that requests protocol stack to serialise a message, must check
@@ -314,7 +323,8 @@ If it is `ErrorStatus::UpdateRequired`,
 the caller must create random-access iterator to the already written buffer
 and invoke `update()` function with it, to make sure the written information 
 is correct.
-```cpp
+[source, c++]
+----
 using ProtocolStack = ...;
 ProtocolStack protStack;
 
@@ -329,4 +339,4 @@ ErrorStatus sendMessage(const Message& msg)
     return es;
 }
 
-```
+----

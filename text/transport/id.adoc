@@ -1,4 +1,5 @@
-# ID Layer
+[[transport-id]]
+=== ID Layer ===
 
 The job of this layer is handle the message ID information. 
 
@@ -11,7 +12,8 @@ is about to get sent, just get the ID information from the message object and
 serialise it prior to invoking the write operation of the next layer.
 
 The code of the layer is pretty straightforward:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 // TField is type of the field used to read/write message ID
@@ -75,7 +77,7 @@ private:
     TNext m_next;
 };
 } // namespace comms
-```
+----
 
 To properly finalise the implementation above we need to resolve two main challenges:
 - Implement `createMsg()` function which receives ID of the message and 
@@ -85,16 +87,17 @@ allocated message object. In most cases defining it to be
 `std::unique_ptr<Message>` will do the job. However, the main problem here is usage of dynamic memory
 allocation. Bare metal platform may not have such luxury. There must be a 
 way to support 
-["in place" allocation](https://en.wikipedia.org/wiki/Placement_syntax) as well.
+https://en.wikipedia.org/wiki/Placement_syntax["in place" allocation] as well.
 
-## Creating Message Object
+==== Creating Message Object ====
 
-Let's start with creation of proper message object, given the **numeric** message ID. 
+Let's start with creation of proper message object, given the *numeric* message ID. 
 It must be as efficient as possible.
 
 In many cases the IDs of the messages are sequential ones and defined using 
 some enumeration type.
-```cpp
+[source, c++]
+----
 enum MsgId
 {
     MsgId_Message1,
@@ -102,11 +105,12 @@ enum MsgId
     ...
     MsgId_NumOfMessages
 };
-```
+----
 
 Let's assume that we have `FactoryMethod` class with polymorphic `createMsg()`
 function, that returns allocated message object wrapped in a `MsgPtr` smart pointer.
-```cpp
+[source, c++]
+----
 class FactoryMethod
 {
 public:
@@ -118,16 +122,17 @@ public:
 protected:
     virtual MsgPtr createMsgImpl() const = 0;
 };
-```
+----
 
 In this case, the most efficient way is to have an array of pointers to
 polymorphic class `FactoryMethod`. The index of the array cell corresponds to 
 a message ID.
 
-![Image: Message Factory](../image/msg_factory.png)
+image::images/msg_factory.png[Image: Message Factory]
 
 The code of `MsgIdLayer::createMsg()` function is quite simple:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <...>
@@ -146,13 +151,14 @@ private:
     }
 };
 } // namespace comms
-```
-The runtime [complexity](https://en.wikipedia.org/wiki/Time_complexity) 
+----
+The runtime https://en.wikipedia.org/wiki/Time_complexity[complexity]
 of such code is `O(1)`.
 
 However, there are many protocols that their ID map is quite sparse and it is 
 impractical to use an array for direct mapping:
-```cpp
+[source, c++]
+----
 enum MsgId
 {
     MsgId_Message1 = 0x0101,
@@ -161,12 +167,13 @@ enum MsgId
     ...
     MsgId_NumOfMessages
 };
-```
-In this case the array of `FactoryMethod`s described earlier must be packed and
-[binary search](https://en.wikipedia.org/wiki/Binary_search_algorithm) algorithm
+----
+In this case the array of `FactoryMethod`-s described earlier must be packed and
+https://en.wikipedia.org/wiki/Binary_search_algorithm[binary search] algorithm
 used to find required method. To support such search, the `FactoryMethod` must
 be able to report ID of the messages it creates.
-```cpp
+[source, c++]
+----
 class FactoryMethod
 {
 public:
@@ -184,11 +191,12 @@ protected:
     virtual MsgIdType idImpl() const = 0;
     virtual MsgPtr createMsgImpl() const = 0;
 };
-```
+----
 
 Then the code of `MsgIdLayer::createMsg()` needs to apply binary search to find
 the required method:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <...>
@@ -214,24 +222,25 @@ private:
     }
 };
 } // namespace comms
-```
-Note, that [std::lower_bound](http://en.cppreference.com/w/cpp/algorithm/lower_bound) 
-algorithm requires `FactoryMethod`s in the 
+----
+Note, that http://en.cppreference.com/w/cpp/algorithm/lower_bound[std::lower_bound]
+algorithm requires `FactoryMethod`-s in the 
 "registry" to be sorted by the message ID. The runtime 
-[complexity](https://en.wikipedia.org/wiki/Time_complexity) 
+https://en.wikipedia.org/wiki/Time_complexity[complexity] 
 of such code is `O(log(n))`, where `n` is size of the registry.
 
 Some communication protocols define multiple variants of the same message, which
 are differentiated by some other means, such as serialisation length of the message.
 It may be convenient to implement such variants as separate message classes, which
-will require separate `FactoryMethod`s to instantiate them. In this case,
+will require separate `FactoryMethod`-s to instantiate them. In this case,
 the `MsgIdLayer::createMsg()` function may use 
-[std::equal_range](http://en.cppreference.com/w/cpp/algorithm/equal_range)
+http://en.cppreference.com/w/cpp/algorithm/equal_range[std::equal_range]
 algorithm instead of 
-[std::lower_bound](http://en.cppreference.com/w/cpp/algorithm/lower_bound), and
+http://en.cppreference.com/w/cpp/algorithm/lower_bound[std::lower_bound], and
 use additional parameter to specify which of the methods to pick from the equal
 range found:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <...>
@@ -252,7 +261,7 @@ private:
     }
 };
 } // namespace comms
-```
+----
 
 Please note, that `MsgIdLayer::read()` function also needs to be modified to
 support multiple attempts to create message object with the same id.
@@ -262,10 +271,11 @@ until the found equal range is exhausted. I leave the implementation of
 this extra logic as an exercise to the reader.
 
 To complete the message allocation subject we need to come up with an automatic
-way to create the registry of `FactoryMethod`s used earlier. Please remember,
+way to create the registry of `FactoryMethod`-s used earlier. Please remember,
 that `FactoryMethod` was just a polymorphic interface. We need to implement
 actual method that implements the virtual functionality.
-```cpp
+[source, c++]
+----
 template <typename TActualMessage>
 class ActualFactoryMethod : public FactoryMethod
 {
@@ -280,49 +290,51 @@ protected:
         return MsgPtr(new TActualMessage());
     }
 }
-```
+----
 Note, that the code above assumes that `comms::option::StaticNumIdImpl`
-option (described in 
-[Generalising Message Implementation](../library/impl.md) chapter)
+option (described in <<library-impl>> chapter)
 was used to specify numeric message ID
 when defining the `ActualMessage*` class.
 
 Also note, that the example above uses dynamic memory allocation to allocate
 actual message object. This is just for idea demonstration purposes. The
-[Allocating Message Object](#allocating-message-object) section below will
+<<transport-id-alloc>> section below will
 describe how to support "in-place" allocation.
 
 The types of the messages, that can be received over I/O link, are usually known
 at compile time. If we bundle them together in `std::tuple`, it is easy to
 apply already familiar meta-programming technique of iterating over the provided
 types and instantiate proper `ActualFactoryMethod<>` object.
-```cpp
+[source, c++]
+----
 using AllMessages = std::tuple<
     ActualMessage1, 
     ActualMessage2,
     ActualMessage3,
     ...
 >;
-```
+----
 
 The size of the *registry* can easily be identified using 
-[std::tuple_size](http://en.cppreference.com/w/cpp/utility/tuple/tuple_size).
-```cpp
+http://en.cppreference.com/w/cpp/utility/tuple/tuple_size[std::tuple_size].
+[source, c++]
+----
 static const RegistrySize = std::tuple_size<AllMessages>::value;
 using Registry = std::array<FactoryMethod*, RegistrySize>;
 Registry m_registry; // registry object
-```
+----
 
 Now it's time to iterate (at compile time) over all the types defined in 
 the `AllMessages` tuple and create separate `ActualFactoryMethod<>` for
-each and every one of them. Remember [tupleForEach](../appendix/a.md)? We need
+each and every one of them. Remember <<appendix-a, tupleForEach>>? We need
 something similar here, but missing the tuple object itself. We are just iterating
 over types, not the elements of the tuple object. We'll call it 
-`tupleForEachType()`. See [Appendix D](../appendix/d.md) for implementation details.
+`tupleForEachType()`. See <<appendix-d>> for implementation details.
 
 We also require a functor class that will be invoked for every message type and
 will be responsible to fill the provided registry:
-```cpp
+[source, c++]
+----
 class MsgFactoryCreator
 {
 public:
@@ -343,23 +355,25 @@ private:
     Registry& registry_;
     unsigned idx_ = 0;
 };
-```
+----
 
 The initialisation function may be as simple as:
-```cpp
+[source, c++]
+----
 void initRegistry()
 {
     tupleForEachType<AllMessages>(MsgFactoryCreator(m_registry));
 }
-```
+----
 
-**NOTE**, that `ActualFactoryMethod<>` factories do not have any internal state and 
+*NOTE*, that `ActualFactoryMethod<>` factories do not have any internal state and 
 are defined as static objects. It is safe just to store pointers to them in
 the *registry* array.
 
 To summarise this section, let's redefine `comms::MsgIdLayer` and add
 the message creation functionality.
-```cpp
+[source, c++]
+----
 namespace comms
 {
 // TField is type of the field used to read/write message ID
@@ -424,9 +438,10 @@ private:
     
 };
 } // namespace comms
-```
+----
 
-## Allocating Message Object
+[[transport-id-alloc]]
+==== Allocating Message Object ====
 
 At this stage, the only missing piece of information is definition of the
 smart pointer type responsible to hold the allocated message object (`MsgPtr`)
@@ -439,21 +454,23 @@ when such allocations are not allowed.
 Let's start with the calculation of the buffer size which is big enough to 
 hold any message in the provided `AllMessages` bundle. It is similar to the
 size of the `union` below.
-```cpp
+[source, c++]
+----
 union AllMessagesU
 {
     ActualMessage1 msg1;
     ActualMessage2 msg2;
     ...
 };
-```
+----
 
 However, all the required message types are provided as `std::tuple`, not 
 as `union`. What we need is something like 
-[std::aligned_union](http://en.cppreference.com/w/cpp/types/aligned_union), but
+http://en.cppreference.com/w/cpp/types/aligned_union[std::aligned_union], but
 for the types already bundled in `std::tuple`. It turns out it is very easy to
 implement using template specialisation:
-```cpp
+[source, c++]
+----
 template <typename TTuple>
 struct TupleAsAlignedUnion;
 
@@ -463,29 +480,32 @@ struct TupleAsAlignedUnion<std::tuple<TTypes...> >
     using Type = typename std::aligned_union<0, TTypes...>::type;
 };
 
-```
+----
 
-**NOTE**, that some compilers (gcc v5.0 and below) may not implement 
+*NOTE*, that some compilers (gcc v5.0 and below) may not implement 
 `std::aligned_union` type, but they do implement
-[std::aligned_storage](http://en.cppreference.com/w/cpp/types/aligned_storage).
-The [Appendix E](../appendix/e.md) shows how to implement aligned union
+http://en.cppreference.com/w/cpp/types/aligned_storage[std::aligned_storage].
+The <<appendix-e>> shows how to implement aligned union
 functionality using `std::aligned_storage`.
 
 The "in place" allocation area, that can fit in any message type listed in 
 `AllMessages` tuple, can be defined as:
-```cpp
+[source, c++]
+----
 using InPlaceStorage = typename TupleAsAlignedUnion<AllMessages>::Type;
-```
+----
 
 The "in place" allocation is simple:
-```cpp
+[source, c++]
+----
 InPlaceStorage inPlaceStorage;
 new (&inPlaceStorage) TMessage(); // TMessage is type of the message being created.
-```
+----
 
 The "in place" allocation requires "in place" deletion, i.e. destruction of
 the allocated element.
-```cpp
+[source, c++]
+----
 template <typename T>
 struct InPlaceDeleter
 {
@@ -493,13 +513,14 @@ struct InPlaceDeleter
         obj->~T();
     }
 };
-```
+----
 The smart pointer to `Message` interface class may be defined as 
 `std::unique_ptr<Message, InPlaceDeleter<Message> >`.
 
 Now, let's define two independent allocation policies with the similar interface.
 One for dynamic memory allocation, and the other for "in place" allocation.
-```cpp
+[source, c++]
+----
 template <typename TMessageInterface>
 struct DynMemAllocationPolicy
 {
@@ -534,7 +555,7 @@ private:
     using InPlaceStorage = typename TupleAsAlignedUnion<TAllMessages>::Type;
     InPlaceStorage m_storage;
 }
-```
+----
 Please pay attention, that the implementation of `InPlaceAllocationPolicy` is 
 the simplest possible one. In production quality code, it is recommended to insert 
 protection against double allocation
@@ -545,7 +566,8 @@ place.
 
 The choice of the allocation policy used in `comms::MsgIdLayer` may be implemented
 using the already familiar technique of using options.
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <
@@ -558,12 +580,13 @@ class MsgIdLayer
     ...
 };
 } // namespace comms
-```
+----
 
 If no option is specified, the `DynMemAllocationPolicy` must be chosen. To 
 force "in place" message allocation a separate option may be defined and
 passed as template parameter to `comms::MsgIdLayer`.
-```cpp
+[source, c++]
+----
 namespace comms
 {
 namespace option
@@ -571,13 +594,14 @@ namespace option
 struct InPlaceAllocation {};
 } // namespace option
 } // namespace comms
-```
+----
 
 Using the familiar technique of options parsing, we can create a structure,
 where a boolean value `HasInPlaceAllocation` defaults to `false` and can be
 set to `true`, if the option mentioned above is used. As the result, the policy choice
 may be implemented as:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <
@@ -608,13 +632,14 @@ private:
     AllocPolicy m_policy;
 };
 } // namespace comms
-```
+----
 What remains to be done is to provide the `ActualFactoryMethod<>` class with
 an ability to use allocation policy for allocating the message. Please
 remember, that `ActualFactoryMethod<>` objects are stateless static ones. It
 means that the allocation policy object needs to passed as the parameter to
 its allocation function. 
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <
@@ -657,9 +682,9 @@ private:
     AllocPolicy m_policy;
 };
 } // namespace comms
-```
+----
 
-## Summary
+==== Summary ====
 
 The final implementation of the ID Layer (`comms::MsgIdLayer`) is a generic 
 piece of code. It receives a list of message classes, it must recognise, 
