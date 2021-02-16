@@ -1,4 +1,5 @@
-# Generalising Message Implementation
+[[library-impl]]
+=== Generalising Message Implementation ===
 
 Previous chapters described `MessageBase` class, which provided implementation for
 some portions of polymorphic behaviour defined in the interface class `Message`.
@@ -15,16 +16,16 @@ The generic `comms::MessageBase` class must be able to:
 virtual member function, when such ID is known at compile time.
 - provide common dispatch functionality, i.e. implement `dispatchImpl()`
 virtual member function, described in 
-[Message / Dispatching and Handling](../message/dispatch_handle.md) chapter.
+<<message-dispatch_handle>> chapter.
 - support extension of the default message interface, described in
-[Message / Extending Interface](../message/extend_interface.md) chapter.
+<<message-extend_interface>> chapter.
 - automate common operations on fields, i.e. implement `readImpl()`, `writeImpl()`,
-`lengthImpl()`, etc..., described in 
-[Fields / Automating Basic Operations](../fields/automation.md) chapter.
+`lengthImpl()`, etc..., described in <<fields-automation>> chapter.
 
 Just like common `comms::Message` interface class, the `comms::MessageBase`
 will also receive options to define its behaviour.
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TBase, typename... TOptions>
@@ -33,13 +34,14 @@ class MessageBase : public TBase
     ...
 };
 } // namespace comms
-```
+----
 Note, that the `comms::MessageBase` class receives its base class as a 
 template parameter. It is expected to be any variant of `comms::Message` or
 any extended interface class, which inherits from `comms::Message`.
 
 The supported options may include:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 namespace option
@@ -59,15 +61,16 @@ struct FieldsImpl {};
 
 } // namespace option
 } // namespace comms
-```
+----
 
-## Parsing the Options
+==== Parsing the Options ====
 
 The options provided to the `comm::MessageBase` class need to be parsed in a
 very similar way as it was with `comms::Message` in the previous chapter.
 
 Starting with initial version of the options struct:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename... TOptions>
@@ -81,10 +84,11 @@ struct MessageImplParsedOptions<>
     static const bool HasFieldsImpl = false;
 }
 } // namespace comms
-```
+----
 and replacing the initial value of the appropriate variable with new ones, when
 appropriate option is discovered:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <std::intmax_t TId, typename... TOptions>
@@ -111,14 +115,15 @@ struct MessageImplParsedOptions<option::FieldsImpl<TFields>, TOptions...> :
     using Fields = TFields;
 };
 } // namespace comms
-```
+----
 
-## Assemble the Required Implementation
+==== Assemble the Required Implementation ====
 
 Just like with building custom message interface, there is a need to 
 create chunks of implementation parts and connect them using inheritance 
 based on used options.
-```cpp 
+[source, c++]
+---- 
 namespace comms
 {
 // ID information chunk
@@ -151,15 +156,16 @@ protected:
     }
 };
 } // namespace comms
-```
+----
 
-**NOTE**, that single option `comms::option::FieldsImpl<>` may facilitate 
+*NOTE*, that single option `comms::option::FieldsImpl<>` may facilitate 
 implementation of multiple functions: `readImpl()`, `writeImpl()`, `lengthImpl()`, 
 etc... Every such function was declared due to using a separate option when
 defining the interface. We'll have to cherry-pick appropriate implementation
 parts, based on the interface options. As the result, these implementation
 chunks must be split into separate classes.
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TBase, typename TFields>
@@ -191,13 +197,14 @@ protected:
 
 ... // and so on
 } // namespace comms
-```
+----
 
 All these implementation chunks are connected together using extra helper classes
 in a very similar way to how the interface chunks where connected:
 
 Add `idImpl()` if needed
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TBase, typename ParsedImplOptions, bool TImplement>
@@ -215,10 +222,11 @@ struct MessageInterfaceProcessEndian<TBase, false>
     using Type = TBase;
 };
 } // namespace comms
-```
+----
 
 Add `dispatchImpl()` if needed
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TBase, typename ParsedImplOptions, bool TImplement>
@@ -236,10 +244,11 @@ struct MessageImplProcessDispatch<TBase, false>
     using Type = TBase;
 };
 } // namespace comms
-```
+----
 
 Add `fields()` access if needed
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TBase, typename ParsedImplOptions, bool TImplement>
@@ -257,10 +266,11 @@ struct MessageImplProcessFields<TBase, false>
     using Type = TBase;
 };
 } // namespace comms
-```
+----
 
 Add `readImpl()` if needed
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TBase, bool TImplement>
@@ -279,7 +289,7 @@ struct MessageImplProcessReadFields<TBase, false>
 };
 
 } // namespace comms
-```
+----
 
 And so on for all the required implementation chunks: `writeImpl()`, `lengthImpl()`,
 `validImpl()`, etc...
@@ -287,7 +297,7 @@ And so on for all the required implementation chunks: `writeImpl()`, `lengthImpl
 The final stage is to connect all the implementation chunks together
 via inheritance and derive `comms::MessageBase` class from the result.
 
-**NOTE**, that existence of the implementation chunk depends not only on the
+*NOTE*, that existence of the implementation chunk depends not only on the
 implementation options provided to `comms::MessageBase`, but also on the 
 interface options provided to `comms::Message`. For example, `writeImpl()` must
 be added only if `comms::Message` interface includes `write()` member function 
@@ -296,7 +306,8 @@ which adds support for fields (`comms::option::FieldsImpl<>`) was passed to
 `comms::MessageBase`.
 
 The implementation builder helper class looks as following:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 // TBase is interface class
@@ -340,10 +351,11 @@ struct MessageImplBuilder
     using Type = BaseN;
 };
 } // namespace comms
-```
+----
 
 Defining the generic `comms::MessageBase`:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TBase, typename... TOptions>
@@ -352,14 +364,15 @@ class MessageBase : public typename MessageImplBuilder<TBase, TOptions>::Type
     ...
 };
 } // namespace comms
-```
+----
 
 Please note, that `TBase` template parameter is passed to `MessageImplBuilder<>`,
 which in turn passes it up the chain of possible implementation chunks, and
 at the end it turns up to be the base class of the whole hierarchy. 
 
 The full hierarchy of classes presented at the image below. 
-![Image: Full class hierarchy](../image/library_full_hierarchy.png)
+
+image::images/library_full_hierarchy.png[Image: Full class hierarchy]
 
 The total number of used classes may seem scary, but there are only two, which 
 are of any particular interest to us when implementing communication protocol.
@@ -367,7 +380,7 @@ It's `comms::Message` to specify the interface and `comms::MessageBase` to
 provide default implementation of particular functions. All the rest are just
 implementation details.
 
-## Summary
+==== Summary ====
 
 After all this work our library contains generic `comms::Message` class, that
 defines the interface, as well as generic `comms::MessageBase` class, that provides
@@ -376,19 +389,21 @@ default implementation for required polymorphic functionality.
 Let's define a custom communication protocol which uses little endian
 for data serialisation and has numeric
 message ID type defined with the enumeration below:
-```cpp
+[source, c++]
+----
 enum MyMsgId
 {
     MyMsgId_Msg1,
     MyMsgId_Msg2, 
     ...
 };
-```
+----
 
 Assuming we have relevant field classes in place (see [Fields](../fields/head.md)
 chapter), let's define custom `ActualMessage1` that contains two integer 
 value fields: 2 bytes unsigned value and 1 byte signed value.
-```cpp
+[source, c++]
+----
 using ActualMessage1Fields = std::tuple<
     IntValueField<std::uint16_t>,
     IntValueField<std::int8_t>
@@ -405,17 +420,18 @@ class ActualMessage1 : public
     >
 {
 };
-```
+----
 
 That's it, no extra member functions are needed to be implemented, unless the
-message interface class is [extended one](../message/extend_interface.md).
+message interface class is <<message-extend_interface>>.
 Note, that the implementation of the `ActualMessage1` is completely generic
 and doesn't depend on the actual message interface. It can be reused in any
 application with any runtime environment that uses our custom protocol.
 
 The interface class is defined according to the requirements of the application, that
 uses the implementation of the defined protocol.
-```cpp
+[source, c++]
+----
 class MyHandler; // forward declaration of the handler class.
 using MyMessage = comms::Message<
     comms::option::MsgIdType<MyMsgId>, // add id() operation
@@ -426,13 +442,14 @@ using MyMessage = comms::Message<
     comms::option::ValidCheckInterface, // add valid() operation
     comms::option::LittleEndian // use little endian for serialisation
 >;
-```
+----
 
 For convenience the protocol messages should be redefined with appropriate
 interface:
-```cpp
+[source, c++]
+----
 using MyActualMessage1 = ActualMessage1<MyMessage>;
 using MyActualMessage2 = ActualMessage2<MyMessage>;
 ...
-```
+----
 

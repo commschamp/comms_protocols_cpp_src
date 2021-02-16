@@ -1,8 +1,10 @@
-# Generalising Fields Implementation
+[[library-fields]]
+=== Generalising Fields Implementation ===
 
-The [automation](../fields/automation.md) of read/write operations of the message
+The <<fields-automation, automation>> of read/write operations of the message
 required fields to expose predefined minimal interface:
-```cpp
+[source, c++]
+----
 class SomeField
 {
 public:
@@ -27,13 +29,14 @@ public:
 private:
     ValueType m_value;
 }
-```
+----
 
 The read/write operations will probably require knowledge about the serialisation
 endian used for the protocol. We need to come up
 with the way to convey the endian information to the field classes. I would recommend
 doing it by having common base class for all the fields:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <bool THasLittleEndian>
@@ -57,11 +60,12 @@ protected:
     static void writeData(T value, TIter& iter)
 }
 } // namespace comms
-```
+----
 
 The choice of the right endian may be implemented using 
-[Tag Dispatch Idiom](http://www.generic-programming.org/languages/cpp/techniques.php#tag_dispatching).
-```cpp
+http://www.generic-programming.org/languages/cpp/techniques.php#tag_dispatching[Tag Dispatch Idiom].
+[source, c++]
+----
 namespace comms
 {
 template <bool THasLittleEndian>
@@ -110,7 +114,7 @@ private:
     } 
 };
 } // namespace comms
-```
+----
 
 Every field class should receive its base class as a template parameter and
 may use available `readData()` and `writeData()` static member functions 
@@ -118,7 +122,8 @@ when serialising/deserialising internal value in `read()` and `write()`
 member functions.
 
 For example:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TBase, typename TValueType>
@@ -159,21 +164,23 @@ private:
     ValueType m_value
 };
 } // namespace comms
-```
+----
 
 When the endian is known and fixed (for example when implementing third party 
 protocol according to provided specifications), and there is little chance it's ever going
 to change, the base class for all the fields may be explicitly defined:
-```cpp
+[source, c++]
+----
 using MyProjField = comms::Field<false>; // Use big endian for fields serialisation
 using MyIntField = comms::IntValueField<MyProjField>;
-```
+----
 
 However, there may be the case when the endian information is not known up
 front, and the one provided to the message interface definition (`comms::Message`) 
 must be used. In this case, the message interface class may define common 
 base class for all the fields:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename... TOptions>
@@ -186,11 +193,12 @@ pablic:
     ...
 };
 } // namespace comms
-```
+----
 
 As the result the definition of the message's fields must receive a template
 parameter of the base class for all the fields:
-```cpp
+[source, c++]
+----
 template <typename TFieldBase>
 using ActualMessage1Fields = std::tuple<
     comms::IntValueField<TFieldBase>,
@@ -206,11 +214,11 @@ class ActualMessage1 : public
     >
 {
 };    
-```
+----
 
-## Multiple Ways to Serialise Fields
+==== Multiple Ways to Serialise Fields ====
 
-The [Common Field Types](../fields/common_types.md) chapter described most 
+The <<fields-common_types>> chapter described most 
 common types of fields with various serialisation and handling nuances,
 which can be used to implement a custom communication protocol. 
 
@@ -224,36 +232,37 @@ require different implementation of read/write/length functionality.
 
 Another possible case is a necessity to add/subtract some predefined offset to/from the value
 being serialised and subtracting/adding the same offset when the value is deserialised.
-Good example of such case would be the serialisation of a **year** information,
+Good example of such case would be the serialisation of a *year* information,
 which is serialised as an offset from year 2000 and consumes only 1 byte.
 It is possible to store the value as a single byte 
 (`comms::IntValueField<..., std::uint8_t>`), but it would be very inconvenient.
 It is much better if we could store a normal year value (`2015`, `2016`, etc ...) 
 using `std::uint16_t` type, but when serialising, the values that get written
-are `15`, `16`, etc... **NOTE**, that such field requires two steps in its 
+are `15`, `16`, etc... *NOTE*, that such field requires two steps in its 
 serialisation logic:
 
 - add required offset (`-2000` in the example above)
 - limit the number of bytes when serialising the result
 
 Another popular way to serialise integer value is to use
-[Base-128](https://en.wikipedia.org/wiki/Variable-length_quantity)
+https://en.wikipedia.org/wiki/Variable-length_quantity[Base-128]
 encoding. In this case the number of bytes in the serialisation sequence is
 not fixed. 
 
 What if some protocol decides to serialise the same offset from
-year 2000, but using the **Base-128** encoding? It becomes obvious that
+year 2000, but using the *Base-128* encoding? It becomes obvious that
 having a separate field class for every possible variant is impractical at
 least. There must be a way to split the serialisation logic into small 
 chunks, which can be applied one on top of another.
 
-Using the same idea of the *options* and adapting the behaviour of the field 
+Using the same idea of the _options_ and adapting the behaviour of the field 
 class accordingly, we can generalise all the [fields](../fields/common_types.md) 
 into a small subset of classes and make them also part of 
 our generic library. 
 
 The options described earlier may be defined using following option classes:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 namespace option
@@ -273,15 +282,16 @@ struct VarLength {};
 
 } // namespace option
 } // namespace comms
-```
+----
 
-## Parsing the Options
+==== Parsing the Options ====
 
 In a very similar way to parsing options of the message interface (`comms::Message`) 
 and message implementation (`comms::MessageBase`) described in earlier chapters,
 we will create a struct, that will contain all the provided information to be
 used later.
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename... TOptions>
@@ -320,13 +330,14 @@ struct FieldParsedOptions<VarLength<TMinLen, TMaxLen>, TOptions...> :
     static const std::size_t MaxVarLength = TMaxLen;
 };
 } // namespace comms
-```
+----
 
-## Assemble the Required Functionality
+==== Assemble the Required Functionality ====
 
 Before parsing the options and assembling the right functionality there is a need
 to start with basic integer value functionality:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TFieldBase, typename TValueType>
@@ -340,7 +351,7 @@ private:
     ValueType m_value;
 };
 } // namespace comms
-```
+----
 
 Such field receives its base class and the type of the value it stores. The 
 implementation of read/write/length functionalities are very basic and 
@@ -348,7 +359,8 @@ straightforward.
 
 Now, we need to prepare various adaptor classes that will wrap or replace the
 existing interface functions:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <std::intmax_t TOffset, typename TNext>
@@ -371,8 +383,8 @@ private:
 
 ... // and so on
 } // namespace comms
-```
-**NOTE**, that the adaptor classes above wrap one another (`TNext` template
+----
+*NOTE*, that the adaptor classes above wrap one another (`TNext` template
 parameter) and either replace or forward the read/write/length operations to the next
 adaptor or final `BasicIntValue` class, instead of using inheritance as it was 
 with message interface and implementation chunks. The overall architecture 
@@ -385,7 +397,8 @@ Now it's time to use the parsed options and wrap the `BasicIntValue` with
 required adaptors:
 
 Wrap with `SerOffsetAdaptor` if needed
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TField, typename TOpts, bool THasSerOffset>
@@ -403,10 +416,11 @@ struct AdaptBasicFieldSerOffset<TField, TOpts, false>
     using Type = TField;
 };
 } // namespace comms
-```
+----
 
 Wrap with `FixedLengthAdaptor` if needed
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TField, typename TOpts, bool THasFixedLength>
@@ -424,12 +438,13 @@ struct AdaptBasicFieldFixedLength<TField, TOpts, false>
     using Type = TField;
 };
 } // namespace comms
-```
+----
 
 And so on for all other possible adaptors.
 
 Now, let's bundle all the required adaptors together:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TBasic, typename... TOptions>
@@ -449,10 +464,11 @@ sturct FieldBuilder
     using Type = FieldN;
 };
 } // namespace comms
-```
+----
 
 The final stage is to actually define final `IntValueField` type:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TBase, typename TValueType, typename... TOptions>
@@ -485,11 +501,12 @@ private:
     Adapted m_adapted;
 };
 } // namespace comms
-```
+----
 
-The definition of the **year** field which is serialised using offset from
+The definition of the *year* field which is serialised using offset from
 year `2000` may be defined as:
-```cpp
+[source, c++]
+----
 using MyFieldBase = comms::Field<false>; // use big endian
 using MyYear = comms::IntValueField<
     MyFieldBase,
@@ -497,9 +514,9 @@ using MyYear = comms::IntValueField<
     comms::option::NumValueSerOffset<-2000>,
     comms::option::FixedLength<1>
 >;
-```
+----
 
-## Other Options
+==== Other Options ====
 
 In addition to options that regulate the read/write behaviour, there can be 
 options which influence how the field is created and/or handled afterwards.
@@ -507,7 +524,8 @@ options which influence how the field is created and/or handled afterwards.
 For example, there may be a need to set a specific value when the field object
 is created (using default constructor). Let's introduce a new options for
 this purpose:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 namespace option
@@ -516,10 +534,11 @@ template <typename T>
 struct DefaultValueInitialiser{};
 } // namespace option
 } // namespace comms
-```
+----
 The template parameter provided to this option is expected to be a class/struct
 with the following interface:
-```cpp
+[source, c++]
+----
 struct DefaultValueSetter
 {
     template <typename TField>
@@ -528,11 +547,12 @@ struct DefaultValueSetter
         field.value() = ...; // Set the custom value
     }
 }
-```
+----
 
 Then the relevant adaptor class may set the default value of the field using the
 provided setter class:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TSetter, typename TNext>
@@ -557,7 +577,7 @@ private:
     TNext m_next;
 }; 
 } // namespace comms
-```
+----
 
 Please note, that both `comms::option::DefaultValueInitialiser` option and 
 `DefaultValueInitAdaptor` adaptor class are completely generic, and
@@ -565,7 +585,8 @@ they can be used with any type of the field.
 
 For numeric fields, such as `IntValueField` defined earlier, the generic library
 may provide built-in setter class:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template<std::intmax_t TVal>
@@ -580,11 +601,12 @@ struct DefaultNumValueInitialiser
     }
 };
 } // namespace comms
-```
+----
 And then, create a convenience alias to `DefaultValueInitialiser` option which
 receives a numeric value as its template parameter and insures that the
 field's value is initialised accordingly:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 namespace option
@@ -593,11 +615,12 @@ template<std::intmax_t TVal>
 using DefaultNumValue = DefaultValueInitialiser<details::DefaultNumValueInitialiser<TVal> >;
 } // namespace option
 } // namespace comms
-```
+----
 
-As the result, the making the **year** field to be default constructed with
+As the result, the making the *year* field to be default constructed with
 value `2016` may look like this:
-```cpp
+[source, c++]
+----
 using MyFieldBase = comms::Field<false>; // use big endian
 using MyYear = comms::IntValueField<
     MyFieldBase,
@@ -606,21 +629,21 @@ using MyYear = comms::IntValueField<
     comms::option::FixedLength<1>,
     comms::option::DefaultNumValue<2016>
 >;
-```
+----
 
-## Other Fields
+==== Other Fields ====
 
-The [Common Field Types](../fields/common_types.md) chapter mentions multiple
+The <<fields-common_types>> chapter mentions multiple
 other fields and several different ways to serialise them. I'm not going to 
 describe each and every one of them here. Instead, I'd recommend taking a look
 at the documentation of the 
-[COMMS library](https://github.com/arobenko/comms_champion#comms-library) which
+https://github.com/commschamp/comms_champion#comms-library[COMMS library] which
 was implemented using ideas from this book. It will describe all the fields
 it implements and their options.
 
-## Eliminating Dynamic Memory Allocation
+==== Eliminating Dynamic Memory Allocation ====
 
-Fields like **String** or **List** may contain variable number of characters/elements. 
+Fields like *String* or *List* may contain variable number of characters/elements. 
 The default internal value storage type for such fields will probably be 
 `std::string` or `std::vector` respectively. It will do the job, mostly. However,
 they may not be suitable for bare-metal products that cannot use dynamic 
@@ -630,7 +653,8 @@ easily substitute these types with alternatives, such as custom `StaticString` o
 
 Let's define a new option that will provide fixed storage size and will force
 usage of these custom types instead of `std::string` and `std::vector`.
-```cpp
+[source, c++]
+----
 namespace comms
 {
 namespace option
@@ -639,10 +663,11 @@ template <std::size_t TSize>
 struct FixedSizeStorage {};
 } // namespace option
 } // namespace comms
-```
+----
 
 The parsed option structure needs to be extended with new information:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename... TOptions>
@@ -664,10 +689,11 @@ struct FieldParsedOptions<option::FixedSizeStorage<TSize>, TOptions...> :
 };
 
 } // namespace comms
-```
+----
 Now, let's implement the logic of choosing `StaticString` as the value storage
 type if the option above is used and choosing `std::string` if not.
-```cpp
+[source, c++]
+----
 // TOptions is a final variant of FieldParsedOptions<...>
 template <typename TOptions, bool THasFixedStorage>
 struct StringStorageType;
@@ -687,15 +713,16 @@ struct StringStorageType<TOptions, false>
 template <typename TOptions>
 using StringStorageTypeT =
     typename StringStorageType<TOptions, TOptions::HasFixedSizeStorage>::Type;
-```
+----
 
 `comms::util::StaticString` is the implementation of a string management class, 
 which exposes the same public interface as `std::string`. It receives the fixed size
 of the storage area as a template parameter, uses `std::array` or similar as its private
 data member the store the string characters.
 
-The implementation of the **String** field may look like this:
-```cpp
+The implementation of the *String* field may look like this:
+[source, c++]
+----
 template <typename TBase, typename... TOptions>
 class StringField
 {
@@ -732,12 +759,13 @@ private:
     Adapted m_adapted;
 };
 } // namespace comms
-```
+----
 
 As the result the definition of the message with a string field that doesn't 
 use dynamic memory allocation may look like this:
 
-```cpp
+[source, c++]
+----
 template <typename TFieldBase>
 using ActualMessage3Fields = std::tuple<
     comms::StringField<TFieldBase, comms::option::FixedStorageSize<128> >,
@@ -752,14 +780,15 @@ class ActualMessage3 : public
     >
 {
 };
-```
+----
 
 And what about the case, when there is a need to create a message with a 
 string field, but substitute the underlying default `std::string` type with 
-`StaticString` **only** when compiling the bare-metal application? In this
+`StaticString` *only* when compiling the bare-metal application? In this
 case the `ActualMessage3` class may be defined to have additional template
 parameter which will determine the necessity to substitute the storage type.
-```cpp
+[source, c++]
+----
 template <bool THasFixedSize>
 struct StringExtraOptions
 {
@@ -786,12 +815,13 @@ class ActualMessage3 : public
     >
 {
 };
-```
+----
 
 Thanks to the fact that `StaticString` and `std::string` classes expose the
 same public interface, the message handling function doesn't need to worry about
 actual storage type. It just uses public interface of `std::string`:
-```cpp
+[source, c++]
+----
 class MsgHandler 
 {
 public:
@@ -810,7 +840,7 @@ public:
         }
     }
 };
-```
+----
 
-Choosing internal value storage type for **List** fields to be 
+Choosing internal value storage type for *List* fields to be 
 `std::vector` or `StaticVector` is very similar.

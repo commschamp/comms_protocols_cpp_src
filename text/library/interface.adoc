@@ -1,4 +1,5 @@
-# Generalising Message Interface
+[[library-interface]]
+=== Generalising Message Interface ===
 
 The basic generic message interface may include the following operations:
 
@@ -29,13 +30,14 @@ Also there must be a way to specify:
 - type of the message handling class, which is used in `dispatch()` functionality.
 
 The best way to support such variety of requirements is to use the 
-[variadic templates](http://en.cppreference.com/w/cpp/language/parameter_pack) 
-feature of C++11, which allows having non-fixed number of template parameters.
+http://en.cppreference.com/w/cpp/language/parameter_pack[variadic templates]
+feature of C{plus}{plus}11, which allows having non-fixed number of template parameters.
 
 These parameters have to be parsed and used to define all the required 
 internal functions and types. The common message interface class is expected
 to be defined like this:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename... TOptions>
@@ -44,12 +46,13 @@ class Message
     ...
 };
 } // namespace comms
-```
+----
 where `TOptions` is a set of classes/structs, which can be used to define all the 
 required types and functionalities.
 
 Below is an example of such possible option classes:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 namespace option
@@ -80,13 +83,14 @@ template <typename T>
 struct Handler{};
 } // namespace option
 } // namespace comms
-```
+----
 
-Our **PRIMARY OBJECTIVE** for this chapter is to provide an ability to
+Our *PRIMARY OBJECTIVE* for this chapter is to provide an ability to
 create a common message interface class with only requested functionality.
 
 For example, the definition of `MyMessage` interface class below
-```cpp
+[source, c++]
+----
 class MyHandler;
 using MyMessage = comms::Message<
     comms::option::MsgIdType<std::uint16_t>, // use std::uint16_t as message ID type
@@ -95,9 +99,10 @@ using MyMessage = comms::Message<
     comms::option::LengthInfoInterface, // add length() member function to interface
     comms::option::Handler<MyHandler> // add dispatch() member function with MyHandler as the handler class
 >;
-```
+----
 should be equivalent to defining:
-```cpp
+[source, c++]
+----
 class MyMessage
 {
 public:
@@ -119,18 +124,20 @@ protected:
     static void writeData(T value, WriteIterator& iter) {...}  // use big endian by default
     ...
 };
-```
+----
 
 And the following definition of `MyMessage` interface class
-```cpp
+[source, c++]
+----
 using MyMessage = comms::Message<
     comms::option::MsgIdType<std::uint8_t>, // use std::uint8_t as message ID type
     comms::option::LittleEndian, // use little endian in serialisation
     comms::option::ReadIterator<const std::uint8_t*> // use const std::uint8_t* as iterator for reading
 >;
-```
+----
 will be equivalent to:
-```cpp
+[source, c++]
+----
 class MyMessage
 {
 public:
@@ -148,21 +155,22 @@ protected:
 
     ...
 };
-```
+----
 
 Looks nice, isn't it? So, how are we going to achieve this? Any ideas? 
 
-That's right! We use **MAGIC**!
+That's right! We use *MAGIC*!
 
 Sorry, I mean template meta-programming. Let's get started!
 
-## Parsing the Options
+==== Parsing the Options ====
 
 First thing, that needs to be done, is to parse the provided options and record
 them in some kind of a summary structure, with predefined list of 
 `static const bool` variables, which indicate what options have been used, 
 such as one below:
-```cpp
+[source, c++]
+----
 struct MessageInterfaceParsedOptions
 {
     static const bool HasMsgIdType = false;
@@ -173,12 +181,13 @@ struct MessageInterfaceParsedOptions
     static const bool HasValid = false;
     static const bool HasLength = false;
 }
-```
+----
 If some variable is set to `true`, the *summary structure* may also contain 
 some additional relevant types and/or more variables.
 
 For example the definition of
-```cpp
+[source, c++]
+----
 class MyHandler;
 using MyMessage = comms::Message<
     comms::option::MsgIdType<std::uint16_t>, // use std::uint16_t
@@ -187,9 +196,10 @@ using MyMessage = comms::Message<
     comms::option::LengthInfoInterface, // add length() member function to interface
     comms::option::Handler<MyHandler> // add dispatch() member function with MyHandler as the handler class
 >;
-```
+----
 should result in 
-```cpp
+[source, c++]
+----
 struct MessageInterfaceParsedOptions
 {
     static const bool HasMsgIdType = true;
@@ -205,12 +215,13 @@ struct MessageInterfaceParsedOptions
     using WriteIterator = std::uint8_t*;
     using Handler = MyHandler;
 }
-```
+----
 
 Here goes the actual code.
 
 First, there is a need to define an initial version of such summary structure:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename... TOptions>
@@ -228,11 +239,12 @@ struct MessageInterfaceParsedOptions<>
     static const bool HasLength = false;
 }
 } // namespace comms
-```
+----
 
 Then, handle the provided options one by one, while replacing the initial values
 and defining additional types when needed.
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename T, typename... TOptions>
@@ -260,8 +272,8 @@ struct MessageInterfaceParsedOptions<comms::option::ReadIterator<T>, TOptions...
 
 ... // and so on
 } // namespace comms
-```
-Note, that inheritance relationship is used, and according to the C++ language specification
+----
+Note, that inheritance relationship is used, and according to the C{plus}{plus} language specification
 the new variables with the same name hide (or replace) the variables defined in 
 the base class.
 
@@ -270,11 +282,12 @@ class does NOT really matter. However, it is recommended, to add some
 `static_assert()` statements in, to make sure the same options are not used twice,
 or no contradictory ones are used together (if such exist).
 
-## Assemble the Required Interface
+==== Assemble the Required Interface ====
 
-The next stage in the **defining message interface** process is to define
+The next stage in the *defining message interface* process is to define
 various chunks of interface functionality and connect them via inheritance.
-```cpp 
+[source, c++]
+---- 
 namespace comms
 {
 // ID retrieval chunk
@@ -333,7 +346,7 @@ protected:
 
 ... // and so on
 } // namespace comms
-```
+----
 
 Note, that the interface chunks receive their base class through template
 parameters. It will allow us to connect them together using inheritance. Together
@@ -344,7 +357,8 @@ logic which chooses only requested chunks and skips the others.
 
 The code below chooses whether to add `MessageInterfaceIdTypeBase` into
 the inheritance chain of interface chunks.
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TBase, typename TParsedOptions, bool THasMsgIdType>
@@ -362,22 +376,24 @@ struct MessageInterfaceProcessMsgId<TBase, TParsedOptions, false>
     using Type = TBase;
 };
 } // namespace comms
-```
+----
 
 Let's assume that the interface options were parsed and typedef-ed into some
 `ParsedOptions` type:
-```cpp
+[source, c++]
+----
 using ParsedOptions = comms::MessageInterfaceParsedOptions<TOptions...>;
-```
+----
 Then after the following definition statement
-```cpp
+[source, c++]
+----
 using NewBaseClass = 
     comms::MessageInterfaceProcessMsgId<
         OldBaseClass, 
         ParsedOptions, 
         ParsedOptions::HasMsgIdType
     >::Type;
-```
+----
 the `NewBaseClass` is the same as `OldBaseClass`, if the value of
 `ParsedOptions::HasMsgIdType` is `false` (type of message ID wasn't provided
 via options), otherwise `NewBaseClass` becomes 
@@ -387,7 +403,8 @@ Using the same pattern the other helper wrapping classes must be implemented
 also.
 
 Choose right chunk for endian:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TBase, bool THasLittleEndian>
@@ -405,10 +422,11 @@ struct MessageInterfaceProcessEndian<TBase, false>
     using Type = MessageInterfaceBigEndian<TBase>;
 };
 } // namespace comms
-```
+----
 
 Add read functionality if required:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename TBase, typename TParsedOptions, bool THasReadIterator>
@@ -426,12 +444,13 @@ struct MessageInterfaceProcessReadIterator<TBase, TParsedOptions, false>
     using Type = TBase;
 };
 } // namespace comms
-```
+----
 And so on...
 
 The interface building code just uses the helper classes in a sequence of
 type definitions:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 class EmptyBase {};
@@ -466,11 +485,12 @@ struct MessageInterfaceBuilder
     using Type = BaseN;
 };
 } // namespace comms
-```
+----
 
 Once all the required definitions are in place, the common dynamic message
 interface class `comms::Message` may be defined as:
-```cpp
+[source, c++]
+----
 namespace comms
 {
 template <typename... TOptions>
@@ -478,7 +498,7 @@ class Message : public typename MessageInterfaceBuilder<TOptions...>::Type
 {
 };
 } // namespace comms
-```
+----
 
 As the result, any distinct set of options provided as the template parameters
 to `comms::Message` class will cause it to have the required types and 
