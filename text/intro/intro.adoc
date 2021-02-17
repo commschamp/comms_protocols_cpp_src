@@ -40,4 +40,5 @@ include::audience.adoc[]
 include::code.adoc[]
 include::outcome.adoc[]
 include::contribution.adoc[]
+include::offline.adoc[]
 
