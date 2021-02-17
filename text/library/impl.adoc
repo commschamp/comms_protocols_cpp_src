@@ -399,7 +399,7 @@ enum MyMsgId
 };
 ----
 
-Assuming we have relevant field classes in place (see [Fields](../fields/head.md)
+Assuming we have relevant field classes in place (see <<fields-fields>>
 chapter), let's define custom `ActualMessage1` that contains two integer 
 value fields: 2 bytes unsigned value and 1 byte signed value.
 [source, c++]

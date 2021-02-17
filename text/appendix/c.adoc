@@ -1,9 +1,10 @@
 [[appendix-c]]
-# Appendix C - tupleForEachFromUntil
+=== Appendix C - tupleForEachFromUntil ===
 
 Implementation of `tupleAccumulate()` function. Namespace `details` contains some
 helper classes.
-```cpp
+[source, c++]
+----
 namespace details
 {
 
@@ -64,4 +65,4 @@ void tupleForEachFromUntil(TTuple&& tuple, TFunc&& func)
         std::forward<TFunc>(func));
 }
 
-```
+----

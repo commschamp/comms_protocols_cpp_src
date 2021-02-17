@@ -1,8 +1,9 @@
 [[appendix-e]]
-# Appendix E - AlignedUnion
+=== Appendix E - AlignedUnion ===
 
 Implementation of `AlignedUnion` type.
-```cpp
+[source, c++]
+----
 template <typename TType, typename... TTypes>
 class AlignedUnion
 {
@@ -29,4 +30,5 @@ public:
     using Type = 
         typename std::aligned_storage<sizeof(TType), std::alignment_of<TType>::value>::type;
 };
-```
+----
+

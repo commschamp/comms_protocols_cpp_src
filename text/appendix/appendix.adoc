@@ -1,0 +1,12 @@
+[[appendix]]
+== Appendices ==
+
+Appendices contain some extra code examples mentioned in this book and can be
+used for references.
+
+include::a.adoc[]
+include::b.adoc[]
+include::c.adoc[]
+include::d.adoc[]
+include::e.adoc[]
+

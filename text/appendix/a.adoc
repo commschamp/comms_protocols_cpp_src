@@ -1,9 +1,10 @@
 [[appendix-a]]
-# Appendix A - tupleForEach
+=== Appendix A - tupleForEach ===
 
 Implementation of `tupleForEach()` function. Namespace `details` contains some
 helper classes.
-```cpp
+[source, c++]
+----
 namespace details
 {
 template <std::size_t TRem>
@@ -52,4 +53,4 @@ void tupleForEach(TTuple&& tuple, TFunc&& func)
         std::forward<TTuple>(tuple),
         std::forward<TFunc>(func));
 }
-```
+----

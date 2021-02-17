@@ -1,9 +1,10 @@
 [[appendix-b]]
-# Appendix B - tupleAccumulate
+=== Appendix B - tupleAccumulate ===
 
 Implementation of `tupleAccumulate()` function. Namespace `details` contains some
 helper classes.
-```cpp
+[source, c++]
+----
 namespace details
 {
 
@@ -48,4 +49,4 @@ constexpr TValue tupleAccumulate(TTuple&& tuple, const TValue& value, TFunc&& fu
                 value,
                 std::forward<TFunc>(func));
 }
-```
+----

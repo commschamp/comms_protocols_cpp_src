@@ -1,9 +1,10 @@
 [[appendix-d]]
-# Appendix D - tupleForEachType
+=== Appendix D - tupleForEachType ===
 
 Implementation of `tupleForEachType()` function. Namespace `details` contains some
 helper classes.
-```cpp
+[source, c++]
+----
 namespace details
 {
 template <std::size_t TRem>
@@ -47,4 +48,4 @@ void tupleForEachType(TFunc&& func)
     details::TupleForEachTypeHelper<TupleSize>::template exec<Tuple>(
         std::forward<TFunc>(func));
 }
-```
+----

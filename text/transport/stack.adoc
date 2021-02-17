@@ -1,7 +1,7 @@
 [[transport-stack]]
 === Defining Protocol Stack ===
 
-To summarise the protocol [transport](head.md) wrapping subject,
+To summarise the protocol <<transport-transport, transport>> wrapping subject,
 let's define a custom protocol that wraps the message payload in the following way:
 [source]
 ----

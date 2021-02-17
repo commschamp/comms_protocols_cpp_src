@@ -256,7 +256,7 @@ least. There must be a way to split the serialisation logic into small
 chunks, which can be applied one on top of another.
 
 Using the same idea of the _options_ and adapting the behaviour of the field 
-class accordingly, we can generalise all the [fields](../fields/common_types.md) 
+class accordingly, we can generalise all the <<fields-fields, fields>>
 into a small subset of classes and make them also part of 
 our generic library. 
 
